@@ -1,0 +1,28 @@
+<html>
+<head>
+	<link href="http://localhost/valitron/valitron/bootstrap.css" media="all" type="text/css" rel="stylesheet">
+	<script src="http://localhost/valitron/valitron/jquery-1.7.1.js"></script>
+	<script src="http://localhost/valitron/valitron/valitron.js"></script>
+	<title>Valitron - Client side validation for Laravel</title>
+</head>
+<body>
+	<div class="well">
+		<h1>Valitron - Client side validation for Laravel</h1>
+	</div>
+	<span data-validation="max:5" id="test">6</span>
+	<br>
+	<span data-validation="min:5" id="test2">5</span>
+</body>
+<script type="text/javascript">
+
+	$("#test").valitron('validate', 
+		{
+			rules:"min:27", 
+			merge: true, 
+			error: function(message){
+				console.log("FROM Closure", this)
+			}
+		});
+
+</script>
+</html>
