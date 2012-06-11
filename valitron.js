@@ -2,8 +2,11 @@
 (function() {
 
   (function($) {
-    var methods, validations, valitron_name;
+    var methods, translate, validations, valitron_name;
     valitron_name = 'valitron';
+    translate = function() {
+      return "bb";
+    };
     methods = {
       init: function(opts) {
         return this.each(function() {
@@ -16,13 +19,6 @@
             return $this.data(valitron_name, $this);
           }
         });
-      },
-      show: function() {
-        console.log("showing");
-        return methods.destroy();
-      },
-      destroy: function() {
-        return console.log("destroying");
       },
       _resolveValue: function(el) {
         if (el.is("SPAN")) {
@@ -58,6 +54,7 @@
         $.extend(true, opts, options);
         opts.rules = _rls;
         console.log(opts);
+        console.log(this.translate);
         $.each(opts.rules, function(idx, value) {
           var _re, _ref, _ref1, _ret;
           _re = methods._validateOne($this, value[0], value[1]);
@@ -80,7 +77,18 @@
         var _e, _s;
         _e = [false, "Number is bigger then " + parameters + "!"];
         _s = [true, "Grats man"];
+        console.log(this);
         if (value > parameters[0]) {
+          return _e;
+        } else {
+          return _s;
+        }
+      },
+      min: function(el, parameters, value) {
+        var _e, _s;
+        _e = [false, "Number is smaller then " + parameters + "!"];
+        _s = [true, "Grats man"];
+        if (value < parameters[0]) {
           return _e;
         } else {
           return _s;

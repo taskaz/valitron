@@ -2,6 +2,9 @@
 
 	valitron_name = 'valitron';
 
+	translate = ->
+		return "bb"
+
 	methods =
 		init: (opts) ->
 			return this.each ->
@@ -49,7 +52,6 @@
 			$.extend( true, opts, options)
 			opts.rules = _rls
 			console.log opts
-
 			# applie rules
 			$.each opts.rules, (idx, value) ->
 				_re = methods._validateOne($this, value[0], value[1])
@@ -75,6 +77,7 @@
 				true
 				"Grats man"
 			]
+			console.log this
 			if value > parameters[0]
 				return _e
 			else
