@@ -80,6 +80,20 @@
 			else
 				return _s
 
+		min: (el, parameters, value) ->
+			_e = [
+				false
+				"Number is smaller then #{parameters}!"
+			]
+			_s = [
+				true
+				"Grats man"
+			]
+			if value < parameters[0]
+				return _e
+			else
+				return _s
+
 	# valitron function
 	$.fn.valitron = (method)->
 		
