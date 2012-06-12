@@ -10,7 +10,6 @@
 			return this.each ->
 				$this = $(this)
 				data = $this.data(valitron_name)
-
 				# check if plugin already initialized on object
 				if not data
 					# no data, need to set up
@@ -30,11 +29,13 @@
 
 		_parseRules: (rules) ->
 			rule = []
-			_tmp = rules.split $.fn.valitron.config.ruleDelimiter # split rules to array
+			_tmp = rules?.split $.fn.valitron.config.ruleDelimiter # split rules to array
 			# apply each rule to element
+			if !_tmp 
+				return rule
 			$.each _tmp, (idx, value) ->
 				# check if there is any rule, and its string
-				if value != null and typeof value =='string' and value.length > 0
+				if typeof value =='string' and value.length > 0
 					# split rule into method name and its parameters
 					_t = value.split $.fn.valitron.config.ruleMethodDelimiter 
 					_t[0] = _t[0].trim()
@@ -44,68 +45,77 @@
 
 
 		_validateOne : (el, method, parameters) ->
-			validations[method]? el, parameters, methods._resolveValue(el)
+			validations[method]?.call el.valitron, el, parameters, methods._resolveValue(el)
 
 		validate: (options) ->
-			_tmp = null
-			$this = $(this)
-			data = $this.data valitron_name
-			opts = data.options
-			_rls = methods._parseRules options.rules, $.fn.valitron.config.ruleDataElement
-			_rls = _rls.concat(opts.rules);
-			$.extend( true, opts, options)
-			opts.rules = _rls
-
-			# applie rules
-			$.each opts.rules, (idx, value) ->
-				_re = methods._validateOne($this, value[0], value[1])
-				if _re != null and _re != undefined # check if something is returned
-					console.log typeof _re, _re, typeof opts.success
-					if _re.result == true
-						_ret = opts.success?.call($this, _re.message)
-					else
-						_ret = opts.error?.call($this, _re.message)
-					if _ret?
-						consle.log "more"
-				return
-			return $this
+			# console.log this
+			return this.each (options) ->
+				# console.log this
+				_tmp = null
+				$this = $(this)
+				data = $this.data valitron_name
+				opts = data.options
+				_rls = methods._parseRules options.rules, $.fn.valitron.config.ruleDataElement
+				_rls = _rls.concat(opts.rules);
+				$.extend( true, opts, options)
+				opts.rules = _rls
+				# applie rules
+				$.each opts.rules, (idx, value) ->
+					_re = methods._validateOne($this, value[0], value[1])
+					if _re != null and _re != undefined # check if something is returned
+						# console.log $this.valitron.ruleReturns
+						# validation passed
+						if _re.result == true 
+							# if if element validation has success callback execute it
+							if typeof opts.success == "function"
+								# call element validation callback, if returns something call globalSuccess colback too
+								_ret = opts.success?.call($this, _re.message) 
+							# if not execute global callback
+							else 
+								$.fn.valitron.config.globSuccess?.call($this, _re.message)
+							# if element success callback returns anything call globalSuccess too
+							if _ret
+								$.fn.valitron.config.globSuccess?.call($this, _re.message)
+						# failed test, same checks as success case
+						else
+							if typeof opts.error == "function"
+								_ret = opts.error?.call($this, _re.message)
+							else $.fn.valitron.config.globError?.call($this, _re.message)
+							if _ret
+								$.fn.valitron.config.globError?.call($this, _re.message)
+					return
 
 	validations = 
 		# validation rule declaration
 		max : (el, parameters, value) ->
-			_e = {
-				result: false
-				message: "Number is bigger then #{parameters}!"
-			}
-			_s = {
-				result: true
-				message: "Grats man"
-			}
 			# console.log this
 			if value > parameters[0]
-				return _e
+				return this.invalidMsg null, "Number is bigger then #{parameters}!"
 			else
-				return _s
+				return this.validMsg  null, "Grats man"
 
 		min: (el, parameters, value) ->
-			_e = {
-				result: false
-				message: "Number is smaller then #{parameters}!"
-			}
-			_s = {
-				result: true
-				message: "Grats man"
-			}
 			if value < parameters[0]
-				return _e
+				return this.invalidMsg null, "Number is smaller then #{parameters}!"
 			else
-				return _s
+				return this.validMsg null, "Grats man"
+
+		required: (el, parameters, value) ->
+			console.log typeof value, value
+			if value == null or value == undefined
+				return this.invalidMsg null, "Value must be set to something!"
+			else if typeof value == "string" and (value.length <= 0 or value == "")
+				return this.invalidMsg null, "Value must be set to something!"
+			else if typeof value == "boolean" or typeof value == "number"
+				return if Boolean(value) then this.validMsg null, "Grats man" else this.invalidMsg null, "Value must be set to something!"
+			else return this.validMsg null, "Grats man"
+
 
 	# valitron function
 	$.fn.valitron = (method)->
 		
-		console.log "Metthod: #{method}"
-		methods.init.apply this, arguments
+		# console.log "Method: #{method}"
+		init = methods.init.apply this, arguments
 		if methods[method] and method.charAt 0 != "_"
 			return methods[method].apply this, Array.prototype.slice.call arguments, 1
 		else if not method or typeof method == 'object'
@@ -128,12 +138,33 @@
 		error : null
 
 	$.fn.valitron.config =
-		globSuccess : null # global success, this refers to jquery object
-		globError : null # global error, this refers to jquery object
+		globSuccess : (msg) -> # global success, this refers to jquery object
+			console.log msg
+			this.removeClass "error"
+		globError : (msg) -> # global error, this refers to jquery object
+			console.log msg
+			this.addClass "error"
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
 		ruleParamDelimiter: ","
 		ruleDataElement: 'validation'
+
+	# a hellper to set return data for validation methods
+	$.fn.valitron.ruleMsg = (res, transl, msg) ->
+		_r =
+			result : res
+			translation : transl
+			message : msg
+
+		# if transl?
+			# do translation and put it to message
+		return _r
+	# hellper to return positive result from validation rule
+	$.fn.valitron.validMsg = (transl, msg) ->
+		return this.ruleMsg true, transl, msg
+	# hellper to return error results from validation rule
+	$.fn.valitron.invalidMsg = (transl, msg) ->
+		return this.ruleMsg false, transl, msg
 
 	return
 ) jQuery

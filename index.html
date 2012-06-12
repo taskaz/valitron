@@ -1,9 +1,20 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<link href="http://localhost/valitron/valitron/bootstrap.css" media="all" type="text/css" rel="stylesheet">
 	<script src="http://localhost/valitron/valitron/jquery-1.7.1.js"></script>
 	<script src="http://localhost/valitron/valitron/valitron.js"></script>
 	<title>Valitron - Client side validation for Laravel</title>
+	<style type="text/css">
+		input.error
+		{
+			border-color:red;
+		}
+		.center
+		{
+			text-align: center;
+		}
+	</style>
 </head>
 <body>
 	<div class="well">
@@ -11,25 +22,37 @@
 	</div>
 	<hr>
 	<div class="well">
-		<span data-validation="max:5" id="test">6</span>
-		<br>
-		<span data-validation="min:5" id="test2">5</span>
-
-		<input id="cbox" type="checkbox" value="checkbox">Checkbox
-		<br>
-		<input id="radio" type="radio" value="radio button">Radio button
+		<h3>Manual validation and expieriance field</h3>
+		<p>Required validation
+			<input id="req_text" data-validation="required" type="text" placeholder="Required text input">
+			<input id="req_passwd" data-validation="required" type="password" placeholder="Required password input">
+			<br>
+			Required input <input data-validation="required" id="req_checkbox" type="checkbox">
+			<br>
+			Required radio <input data-validation="required" id="req_radio" type="radio">
+		</p>
+		<textarea style="width:100%" name="errors_field" id="errors_field" cols="30" rows="2"></textarea>
 	</div>
+	<p class="center"><button class="btn btn-primary" id="validate_all">Validate them ALL!</button></p>
 </body>
 <script type="text/javascript">
+	// cache error area variable
+	var err_area = $("#errors_field").val("");
+	var err_no = 0;
+	// Hook global valitron error handler to post errors in textarea
+	$.fn.valitron.config.globError = function(msg)
+	{
+		err_area.val((err_no++)+": "+this.attr('id')+" "+msg+"\n"+err_area.val());
+		console.log(this);
+	}
+	$("#validate_all").click(function(){
 
-	$("#test").valitron('validate', 
-		{
-			rules:"min:27", 
-			merge: true, 
-			error: function(message){
-				console.log("FROM Closure", this)
-			}
-		}).valitron();
+		// validate multiple at once, optional callbacks and rules will work in both validations
+		// example $("#req_text, #req_passwd").valitron('validate', {error:function(msg){alert(msg)}}) 
+		$("#req_text, #req_passwd").valitron('validate');
+		$("#req_checkbox").valitron('validate');
+		$("#req_radio").valitron('validate');
+	});
 
 </script>
 </html>

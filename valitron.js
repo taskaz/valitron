@@ -33,10 +33,13 @@
       _parseRules: function(rules) {
         var rule, _tmp;
         rule = [];
-        _tmp = rules.split($.fn.valitron.config.ruleDelimiter);
+        _tmp = rules != null ? rules.split($.fn.valitron.config.ruleDelimiter) : void 0;
+        if (!_tmp) {
+          return rule;
+        }
         $.each(_tmp, function(idx, value) {
           var _t;
-          if (value !== null && typeof value === 'string' && value.length > 0) {
+          if (typeof value === 'string' && value.length > 0) {
             _t = value.split($.fn.valitron.config.ruleMethodDelimiter);
             _t[0] = _t[0].trim();
             _t[1] = _t[1] !== void 0 && _t[1] !== null ? _t[1].split($.fn.valitron.config.ruleParamDelimiter) : null;
@@ -46,61 +49,91 @@
         return rule;
       },
       _validateOne: function(el, method, parameters) {
-        return typeof validations[method] === "function" ? validations[method](el, parameters, methods._resolveValue(el)) : void 0;
+        var _ref;
+        return (_ref = validations[method]) != null ? _ref.call(el.valitron, el, parameters, methods._resolveValue(el)) : void 0;
       },
       validate: function(options) {
-        var $this, data, opts, _rls, _tmp;
-        _tmp = null;
-        $this = $(this);
-        data = $this.data(valitron_name);
-        opts = data.options;
-        _rls = methods._parseRules(options.rules, $.fn.valitron.config.ruleDataElement);
-        _rls = _rls.concat(opts.rules);
-        $.extend(true, opts, options);
-        opts.rules = _rls;
-        $.each(opts.rules, function(idx, value) {
-          var _re, _ref, _ref1, _ret;
-          _re = methods._validateOne($this, value[0], value[1]);
-          if (_re !== null && _re !== void 0) {
-            console.log(typeof _re, _re, typeof opts.success);
-            if (_re[0] === true) {
-              _ret = (_ref = opts.success) != null ? _ref.call($this, _re[1]) : void 0;
-            } else {
-              _ret = (_ref1 = opts.error) != null ? _ref1.call($this, _re[1]) : void 0;
+        return this.each(function(options) {
+          var $this, data, opts, _rls, _tmp;
+          _tmp = null;
+          $this = $(this);
+          data = $this.data(valitron_name);
+          opts = data.options;
+          _rls = methods._parseRules(options.rules, $.fn.valitron.config.ruleDataElement);
+          _rls = _rls.concat(opts.rules);
+          $.extend(true, opts, options);
+          opts.rules = _rls;
+          return $.each(opts.rules, function(idx, value) {
+            var _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
+            _re = methods._validateOne($this, value[0], value[1]);
+            if (_re !== null && _re !== void 0) {
+              if (_re.result === true) {
+                if (typeof opts.success === "function") {
+                  _ret = (_ref = opts.success) != null ? _ref.call($this, _re.message) : void 0;
+                } else {
+                  if ((_ref1 = $.fn.valitron.config.globSuccess) != null) {
+                    _ref1.call($this, _re.message);
+                  }
+                }
+                if (_ret) {
+                  if ((_ref2 = $.fn.valitron.config.globSuccess) != null) {
+                    _ref2.call($this, _re.message);
+                  }
+                }
+              } else {
+                if (typeof opts.error === "function") {
+                  _ret = (_ref3 = opts.error) != null ? _ref3.call($this, _re.message) : void 0;
+                } else {
+                  if ((_ref4 = $.fn.valitron.config.globError) != null) {
+                    _ref4.call($this, _re.message);
+                  }
+                }
+                if (_ret) {
+                  if ((_ref5 = $.fn.valitron.config.globError) != null) {
+                    _ref5.call($this, _re.message);
+                  }
+                }
+              }
             }
-            if (_ret != null) {
-              consle.log("more");
-            }
-          }
+          });
         });
-        return $this;
       }
     };
     validations = {
       max: function(el, parameters, value) {
-        var _e, _s;
-        _e = [false, "Number is bigger then " + parameters + "!"];
-        _s = [true, "Grats man"];
         if (value > parameters[0]) {
-          return _e;
+          return this.invalidMsg(null, "Number is bigger then " + parameters + "!");
         } else {
-          return _s;
+          return this.validMsg(null, "Grats man");
         }
       },
       min: function(el, parameters, value) {
-        var _e, _s;
-        _e = [false, "Number is smaller then " + parameters + "!"];
-        _s = [true, "Grats man"];
         if (value < parameters[0]) {
-          return _e;
+          return this.invalidMsg(null, "Number is smaller then " + parameters + "!");
         } else {
-          return _s;
+          return this.validMsg(null, "Grats man");
+        }
+      },
+      required: function(el, parameters, value) {
+        console.log(typeof value, value);
+        if (value === null || value === void 0) {
+          return this.invalidMsg(null, "Value must be set to something!");
+        } else if (typeof value === "string" && (value.length <= 0 || value === "")) {
+          return this.invalidMsg(null, "Value must be set to something!");
+        } else if (typeof value === "boolean" || typeof value === "number") {
+          if (Boolean(value)) {
+            return this.validMsg(null, "Grats man");
+          } else {
+            return this.invalidMsg(null, "Value must be set to something!");
+          }
+        } else {
+          return this.validMsg(null, "Grats man");
         }
       }
     };
     $.fn.valitron = function(method) {
-      console.log("Metthod: " + method);
-      methods.init.apply(this, arguments);
+      var init;
+      init = methods.init.apply(this, arguments);
       if (methods[method] && method.charAt(0 !== "_")) {
         return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
       } else if (!method || typeof method === 'object') {
@@ -116,12 +149,33 @@
       error: null
     };
     $.fn.valitron.config = {
-      globSuccess: null,
-      globError: null,
+      globSuccess: function(msg) {
+        console.log(msg);
+        return this.removeClass("error");
+      },
+      globError: function(msg) {
+        console.log(msg);
+        return this.addClass("error");
+      },
       ruleDelimiter: "|",
       ruleMethodDelimiter: ":",
       ruleParamDelimiter: ",",
       ruleDataElement: 'validation'
+    };
+    $.fn.valitron.ruleMsg = function(res, transl, msg) {
+      var _r;
+      _r = {
+        result: res,
+        translation: transl,
+        message: msg
+      };
+      return _r;
+    };
+    $.fn.valitron.validMsg = function(transl, msg) {
+      return this.ruleMsg(true, transl, msg);
+    };
+    $.fn.valitron.invalidMsg = function(transl, msg) {
+      return this.ruleMsg(false, transl, msg);
     };
   })(jQuery);
 
