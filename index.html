@@ -66,7 +66,7 @@
 		}});
 		$("#req_radio").valitron('validate');
 		// both shorter then 5
-		$("#cust_text1, #cust_text2").valitron("validate", { rules: "max5" });
+		$("#cust_text1, #cust_text2").valitron("validate", { rules: "max:5" });
 		// but second longer then 2 :)
 		$("#cust_text2").valitron("validate", { rules: "min:2", error: function(msg){
 			// add error class

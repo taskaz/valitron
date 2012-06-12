@@ -6,18 +6,6 @@
 		return "bb"
 
 	methods =
-		init: (opts) ->
-			return this.each ->
-				$this = $(this)
-				data = $this.data(valitron_name)
-				# check if plugin already initialized on object
-				if not data
-					# no data, need to set up
-					# extend default options
-					$this.options = $.extend {}, $.fn.valitron.defaults, opts
-					#put rules from element
-					$this.options.rules = methods._parseRules $this.data $.fn.valitron.config.ruleDataElement
-					$this.data valitron_name, $this
 
 		_resolveValue: (el) ->
 			if el.is "input:text, input:password, input:hidden"
@@ -70,6 +58,21 @@
 						$.fn.valitron.config.globError?.call($this, _re.message)
 			return _re;
 
+		init: (opts) ->
+			return this.each ->
+				$this = $(this)
+				data = $this.data(valitron_name)
+				# check if plugin already initialized on object
+				if not data
+					# no data, need to set up
+					# extend default options
+					$this.options = $.extend {}, $.fn.valitron.defaults, opts
+					#put rules from element
+					$this.options.rules = methods._parseRules $this.data $.fn.valitron.config.ruleDataElement
+					$this.data valitron_name, $this
+
+		registerValidation : (name, callback) ->
+			
 
 		validate: (extra_options) ->
 			_options = if extra_options then extra_options else null
