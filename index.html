@@ -9,9 +9,16 @@
 	<div class="well">
 		<h1>Valitron - Client side validation for Laravel</h1>
 	</div>
-	<span data-validation="max:5" id="test">6</span>
-	<br>
-	<span data-validation="min:5" id="test2">5</span>
+	<hr>
+	<div class="well">
+		<span data-validation="max:5" id="test">6</span>
+		<br>
+		<span data-validation="min:5" id="test2">5</span>
+
+		<input id="cbox" type="checkbox" value="checkbox">Checkbox
+		<br>
+		<input id="radio" type="radio" value="radio button">Radio button
+	</div>
 </body>
 <script type="text/javascript">
 
@@ -22,7 +29,7 @@
 			error: function(message){
 				console.log("FROM Closure", this)
 			}
-		});
+		}).valitron();
 
 </script>
 </html>

@@ -21,7 +21,11 @@
 					$this.data valitron_name, $this
 
 		_resolveValue: (el) ->
-			if el.is "SPAN"
+			if el.is "input:text, input:password, input:hidden"
+				return el.val()
+			if el.is "input:checkbox, input:radio"
+				return el.is ":checked"
+			else 
 				return el.text()
 
 		_parseRules: (rules) ->
@@ -51,47 +55,47 @@
 			_rls = _rls.concat(opts.rules);
 			$.extend( true, opts, options)
 			opts.rules = _rls
-			console.log opts
+
 			# applie rules
 			$.each opts.rules, (idx, value) ->
 				_re = methods._validateOne($this, value[0], value[1])
 				if _re != null and _re != undefined # check if something is returned
 					console.log typeof _re, _re, typeof opts.success
-					if _re[0] == true
-						_ret = opts.success?.call($this, _re[1])
+					if _re.result == true
+						_ret = opts.success?.call($this, _re.message)
 					else
-						_ret = opts.error?.call($this, _re[1])
+						_ret = opts.error?.call($this, _re.message)
 					if _ret?
 						consle.log "more"
 				return
-			return
+			return $this
 
 	validations = 
 		# validation rule declaration
 		max : (el, parameters, value) ->
-			_e = [
-				false
-				"Number is bigger then #{parameters}!"
-			]
-			_s = [
-				true
-				"Grats man"
-			]
-			console.log this
+			_e = {
+				result: false
+				message: "Number is bigger then #{parameters}!"
+			}
+			_s = {
+				result: true
+				message: "Grats man"
+			}
+			# console.log this
 			if value > parameters[0]
 				return _e
 			else
 				return _s
 
 		min: (el, parameters, value) ->
-			_e = [
-				false
-				"Number is smaller then #{parameters}!"
-			]
-			_s = [
-				true
-				"Grats man"
-			]
+			_e = {
+				result: false
+				message: "Number is smaller then #{parameters}!"
+			}
+			_s = {
+				result: true
+				message: "Grats man"
+			}
 			if value < parameters[0]
 				return _e
 			else

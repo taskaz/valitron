@@ -21,7 +21,12 @@
         });
       },
       _resolveValue: function(el) {
-        if (el.is("SPAN")) {
+        if (el.is("input:text, input:password, input:hidden")) {
+          return el.val();
+        }
+        if (el.is("input:checkbox, input:radio")) {
+          return el.is(":checked");
+        } else {
           return el.text();
         }
       },
@@ -53,8 +58,6 @@
         _rls = _rls.concat(opts.rules);
         $.extend(true, opts, options);
         opts.rules = _rls;
-        console.log(opts);
-        console.log(this.translate);
         $.each(opts.rules, function(idx, value) {
           var _re, _ref, _ref1, _ret;
           _re = methods._validateOne($this, value[0], value[1]);
@@ -70,6 +73,7 @@
             }
           }
         });
+        return $this;
       }
     };
     validations = {
@@ -77,7 +81,6 @@
         var _e, _s;
         _e = [false, "Number is bigger then " + parameters + "!"];
         _s = [true, "Grats man"];
-        console.log(this);
         if (value > parameters[0]) {
           return _e;
         } else {
