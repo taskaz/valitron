@@ -47,17 +47,18 @@
 		_validateOne : (el, method, parameters) ->
 			validations[method]?.call el.valitron, el, parameters, methods._resolveValue(el)
 
-		validate: (options) ->
-			# console.log this
-			return this.each (options) ->
-				# console.log this
+		validate: (extra_options) ->
+			_options = if extra_options then extra_options else null
+			return this.each () ->
+				console.log _options
 				_tmp = null
 				$this = $(this)
 				data = $this.data valitron_name
 				opts = data.options
-				_rls = methods._parseRules options.rules, $.fn.valitron.config.ruleDataElement
+				# grab options from data element
+				_rls = methods._parseRules _options?.rules, $.fn.valitron.config.ruleDataElement
 				_rls = _rls.concat(opts.rules);
-				$.extend( true, opts, options)
+				$.extend( true, opts, _options)
 				opts.rules = _rls
 				# applie rules
 				$.each opts.rules, (idx, value) ->
@@ -88,20 +89,23 @@
 	validations = 
 		# validation rule declaration
 		max : (el, parameters, value) ->
-			# console.log this
-			if value > parameters[0]
+			if typeof value == "number" and value > parameters[0]
 				return this.invalidMsg null, "Number is bigger then #{parameters}!"
+			else if typeof value == "string" and value.length > parameters[0]
+				this.invalidMsg null, "String is to long, should be max:#{parameters}!"
 			else
 				return this.validMsg  null, "Grats man"
 
 		min: (el, parameters, value) ->
-			if value < parameters[0]
+			if typeof value == "number" and value < parameters[0]
 				return this.invalidMsg null, "Number is smaller then #{parameters}!"
+			else if typeof value == "string" and value.length < parameters[0]
+				this.invalidMsg null, "String should be at least #{parameters} characters length!"
 			else
-				return this.validMsg null, "Grats man"
+				return this.validMsg  null, "Grats man"
 
 		required: (el, parameters, value) ->
-			console.log typeof value, value
+			# console.log typeof value, value
 			if value == null or value == undefined
 				return this.invalidMsg null, "Value must be set to something!"
 			else if typeof value == "string" and (value.length <= 0 or value == "")
@@ -136,6 +140,8 @@
 		# passes jQuery element and message, function(messagae) {}, this refers to jquery object
 		# global error will not be fired! return value witch evolutes to tru to fire it!
 		error : null
+		# indicates that vield is valid and doesnt contain any errors
+		valid : false
 
 	$.fn.valitron.config =
 		globSuccess : (msg) -> # global success, this refers to jquery object

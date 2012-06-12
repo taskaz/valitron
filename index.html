@@ -6,6 +6,10 @@
 	<script src="http://localhost/valitron/valitron/valitron.js"></script>
 	<title>Valitron - Client side validation for Laravel</title>
 	<style type="text/css">
+		.require_error
+		{
+			background-color:#FF9B9D
+		}
 		input.error
 		{
 			border-color:red;
@@ -23,13 +27,18 @@
 	<hr>
 	<div class="well">
 		<h3>Manual validation and expieriance field</h3>
-		<p>Required validation
-			<input id="req_text" data-validation="required" type="text" placeholder="Required text input">
+		<p><h4>Required validation</h4>
+			<input id="req_text" data-validation="required|max:10|min:2" type="text" placeholder="Required text input">
 			<input id="req_passwd" data-validation="required" type="password" placeholder="Required password input">
 			<br>
 			Required input <input data-validation="required" id="req_checkbox" type="checkbox">
 			<br>
 			Required radio <input data-validation="required" id="req_radio" type="radio">
+			<br>
+		</p>
+		<p><h4>Only custom rules</h4>
+			<input type="text" id="cust_text1" placeholder="Custom field">
+			<input type="text" id="cust_text2" placeholder="Custom field">
 		</p>
 		<textarea style="width:100%" name="errors_field" id="errors_field" cols="30" rows="2"></textarea>
 	</div>
@@ -50,8 +59,22 @@
 		// validate multiple at once, optional callbacks and rules will work in both validations
 		// example $("#req_text, #req_passwd").valitron('validate', {error:function(msg){alert(msg)}}) 
 		$("#req_text, #req_passwd").valitron('validate');
-		$("#req_checkbox").valitron('validate');
+		$("#req_checkbox").valitron('validate', { error:function(msg){
+			$("<span>MUST CHECK ME!</span>").insertAfter(this); // put some random error
+			this.attr("checked", "true"); // and check it :D
+			return true; // return anyting to trigger globalcallback aswell
+		}});
 		$("#req_radio").valitron('validate');
+		// both shorter then 5
+		$("#cust_text1, #cust_text2").valitron("validate", { rules: "max5" });
+		// but second longer then 2 :)
+		$("#cust_text2").valitron("validate", { rules: "min:2", error: function(msg){
+			// add error class
+			this.addClass("error")
+		}} ).valitron("validate", { rules: "required", error: function(msg){
+			// oh its required too
+			this.addClass("require_error")
+		}});
 	});
 
 </script>

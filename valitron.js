@@ -52,16 +52,19 @@
         var _ref;
         return (_ref = validations[method]) != null ? _ref.call(el.valitron, el, parameters, methods._resolveValue(el)) : void 0;
       },
-      validate: function(options) {
-        return this.each(function(options) {
+      validate: function(extra_options) {
+        var _options;
+        _options = extra_options ? extra_options : null;
+        return this.each(function() {
           var $this, data, opts, _rls, _tmp;
+          console.log(_options);
           _tmp = null;
           $this = $(this);
           data = $this.data(valitron_name);
           opts = data.options;
-          _rls = methods._parseRules(options.rules, $.fn.valitron.config.ruleDataElement);
+          _rls = methods._parseRules(_options != null ? _options.rules : void 0, $.fn.valitron.config.ruleDataElement);
           _rls = _rls.concat(opts.rules);
-          $.extend(true, opts, options);
+          $.extend(true, opts, _options);
           opts.rules = _rls;
           return $.each(opts.rules, function(idx, value) {
             var _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
@@ -101,21 +104,24 @@
     };
     validations = {
       max: function(el, parameters, value) {
-        if (value > parameters[0]) {
+        if (typeof value === "number" && value > parameters[0]) {
           return this.invalidMsg(null, "Number is bigger then " + parameters + "!");
+        } else if (typeof value === "string" && value.length > parameters[0]) {
+          return this.invalidMsg(null, "String is to long, should be max:" + parameters + "!");
         } else {
           return this.validMsg(null, "Grats man");
         }
       },
       min: function(el, parameters, value) {
-        if (value < parameters[0]) {
+        if (typeof value === "number" && value < parameters[0]) {
           return this.invalidMsg(null, "Number is smaller then " + parameters + "!");
+        } else if (typeof value === "string" && value.length < parameters[0]) {
+          return this.invalidMsg(null, "String should be at least " + parameters + " characters length!");
         } else {
           return this.validMsg(null, "Grats man");
         }
       },
       required: function(el, parameters, value) {
-        console.log(typeof value, value);
         if (value === null || value === void 0) {
           return this.invalidMsg(null, "Value must be set to something!");
         } else if (typeof value === "string" && (value.length <= 0 || value === "")) {
