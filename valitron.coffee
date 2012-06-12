@@ -44,47 +44,55 @@
 			return rule
 
 
-		_validateOne : (el, method, parameters) ->
-			validations[method]?.call el.valitron, el, parameters, methods._resolveValue(el)
+		_validateOne : (el, method, parameters, opts) ->
+			_re = validations[method]?.call el.valitron, el, parameters, methods._resolveValue(el)
+			$this = el
+			if _re != null and _re != undefined # check if something is returned
+				# console.log $this.valitron.ruleReturns
+				# validation passed
+				if _re.result == true
+					# if if element validation has success callback execute it
+					if typeof opts.success == "function"
+						# call element validation callback, if returns something call globalSuccess colback too
+						_ret = opts.success?.call($this, _re.message) 
+					# if not execute global callback
+					else 
+						$.fn.valitron.config.globSuccess?.call($this, _re.message)
+					# if element success callback returns anything call globalSuccess too
+					if _ret
+						$.fn.valitron.config.globSuccess?.call($this, _re.message)
+				# failed test, same checks as success case
+				else
+					if typeof opts.error == "function"
+						_ret = opts.error?.call($this, _re.message)
+					else $.fn.valitron.config.globError?.call($this, _re.message)
+					if _ret
+						$.fn.valitron.config.globError?.call($this, _re.message)
+			return _re;
+
 
 		validate: (extra_options) ->
 			_options = if extra_options then extra_options else null
 			return this.each () ->
-				console.log _options
+				# console.log _options
 				_tmp = null
 				$this = $(this)
 				data = $this.data valitron_name
 				opts = data.options
 				# grab options from data element
 				_rls = methods._parseRules _options?.rules, $.fn.valitron.config.ruleDataElement
+				# merge rules
 				_rls = _rls.concat(opts.rules);
+				# extend other options
 				$.extend( true, opts, _options)
+
 				opts.rules = _rls
 				# applie rules
 				$.each opts.rules, (idx, value) ->
-					_re = methods._validateOne($this, value[0], value[1])
-					if _re != null and _re != undefined # check if something is returned
-						# console.log $this.valitron.ruleReturns
-						# validation passed
-						if _re.result == true 
-							# if if element validation has success callback execute it
-							if typeof opts.success == "function"
-								# call element validation callback, if returns something call globalSuccess colback too
-								_ret = opts.success?.call($this, _re.message) 
-							# if not execute global callback
-							else 
-								$.fn.valitron.config.globSuccess?.call($this, _re.message)
-							# if element success callback returns anything call globalSuccess too
-							if _ret
-								$.fn.valitron.config.globSuccess?.call($this, _re.message)
-						# failed test, same checks as success case
-						else
-							if typeof opts.error == "function"
-								_ret = opts.error?.call($this, _re.message)
-							else $.fn.valitron.config.globError?.call($this, _re.message)
-							if _ret
-								$.fn.valitron.config.globError?.call($this, _re.message)
+					# Validate the rule
+					_re = methods._validateOne $this, value[0], value[1], opts
 					return
+				return
 
 	validations = 
 		# validation rule declaration

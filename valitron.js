@@ -48,16 +48,46 @@
         });
         return rule;
       },
-      _validateOne: function(el, method, parameters) {
-        var _ref;
-        return (_ref = validations[method]) != null ? _ref.call(el.valitron, el, parameters, methods._resolveValue(el)) : void 0;
+      _validateOne: function(el, method, parameters, opts) {
+        var $this, _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ret;
+        _re = (_ref = validations[method]) != null ? _ref.call(el.valitron, el, parameters, methods._resolveValue(el)) : void 0;
+        $this = el;
+        if (_re !== null && _re !== void 0) {
+          if (_re.result === true) {
+            if (typeof opts.success === "function") {
+              _ret = (_ref1 = opts.success) != null ? _ref1.call($this, _re.message) : void 0;
+            } else {
+              if ((_ref2 = $.fn.valitron.config.globSuccess) != null) {
+                _ref2.call($this, _re.message);
+              }
+            }
+            if (_ret) {
+              if ((_ref3 = $.fn.valitron.config.globSuccess) != null) {
+                _ref3.call($this, _re.message);
+              }
+            }
+          } else {
+            if (typeof opts.error === "function") {
+              _ret = (_ref4 = opts.error) != null ? _ref4.call($this, _re.message) : void 0;
+            } else {
+              if ((_ref5 = $.fn.valitron.config.globError) != null) {
+                _ref5.call($this, _re.message);
+              }
+            }
+            if (_ret) {
+              if ((_ref6 = $.fn.valitron.config.globError) != null) {
+                _ref6.call($this, _re.message);
+              }
+            }
+          }
+        }
+        return _re;
       },
       validate: function(extra_options) {
         var _options;
         _options = extra_options ? extra_options : null;
         return this.each(function() {
           var $this, data, opts, _rls, _tmp;
-          console.log(_options);
           _tmp = null;
           $this = $(this);
           data = $this.data(valitron_name);
@@ -66,38 +96,9 @@
           _rls = _rls.concat(opts.rules);
           $.extend(true, opts, _options);
           opts.rules = _rls;
-          return $.each(opts.rules, function(idx, value) {
-            var _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
-            _re = methods._validateOne($this, value[0], value[1]);
-            if (_re !== null && _re !== void 0) {
-              if (_re.result === true) {
-                if (typeof opts.success === "function") {
-                  _ret = (_ref = opts.success) != null ? _ref.call($this, _re.message) : void 0;
-                } else {
-                  if ((_ref1 = $.fn.valitron.config.globSuccess) != null) {
-                    _ref1.call($this, _re.message);
-                  }
-                }
-                if (_ret) {
-                  if ((_ref2 = $.fn.valitron.config.globSuccess) != null) {
-                    _ref2.call($this, _re.message);
-                  }
-                }
-              } else {
-                if (typeof opts.error === "function") {
-                  _ret = (_ref3 = opts.error) != null ? _ref3.call($this, _re.message) : void 0;
-                } else {
-                  if ((_ref4 = $.fn.valitron.config.globError) != null) {
-                    _ref4.call($this, _re.message);
-                  }
-                }
-                if (_ret) {
-                  if ((_ref5 = $.fn.valitron.config.globError) != null) {
-                    _ref5.call($this, _re.message);
-                  }
-                }
-              }
-            }
+          $.each(opts.rules, function(idx, value) {
+            var _re;
+            _re = methods._validateOne($this, value[0], value[1], opts);
           });
         });
       }
@@ -152,7 +153,8 @@
       rules: null,
       language: 'en',
       success: null,
-      error: null
+      error: null,
+      valid: false
     };
     $.fn.valitron.config = {
       globSuccess: function(msg) {
