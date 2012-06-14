@@ -28,7 +28,7 @@
 	<div class="well">
 		<h3>Manual validation and expieriance field</h3>
 		<p><h4>Required validation</h4>
-			<input id="req_text" data-validation="required|max:10|min:2" type="text" placeholder="Required text input">
+			<input id="req_text" data-validation="required|max:10" type="text" placeholder="Required text input">
 			<input id="req_passwd" data-validation="required" type="password" placeholder="Required password input">
 			<br>
 			Required input <input data-validation="required" id="req_checkbox" type="checkbox">
@@ -49,32 +49,39 @@
 	var err_area = $("#errors_field").val("");
 	var err_no = 0;
 	// Hook global valitron error handler to post errors in textarea
-	$.fn.valitron.config.globError = function(msg)
-	{
-		err_area.val((err_no++)+": "+this.attr('id')+" "+msg+"\n"+err_area.val());
-		console.log(this);
-	}
+	$.valitron('config', { 
+		globError : function(msg, rule, params)
+		{
+			err_area.val((err_no++)+": "+$(this).attr('id')+" "+msg+"\n"+err_area.val());
+			$(this).addClass("error");
+			console.log($(this), msg, rule, params);
+		}
+	});
 	$("#validate_all").click(function(){
 
 		// validate multiple at once, optional callbacks and rules will work in both validations
 		// example $("#req_text, #req_passwd").valitron('validate', {error:function(msg){alert(msg)}}) 
-		$("#req_text, #req_passwd").valitron('validate');
-		$("#req_checkbox").valitron('validate', { error:function(msg){
-			$("<span>MUST CHECK ME!</span>").insertAfter(this); // put some random error
-			this.attr("checked", "true"); // and check it :D
+		$("#req_text").valitron("validate");
+		$("#req_text").valitron("validate", { rules:"min:2", error: function(msg, rule, params){
+			console.log("Custom error handler echo:",msg, rule, params);
+		}});
+		$("#req_checkbox").valitron('check', { error:function(msg){
+			console.log(this);
+			// $("<span>MUST CHECK ME!</span>").insertAfter(this); // put some random error
+			$(this).attr("checked", "true"); // and check it :D
 			return true; // return anyting to trigger globalcallback aswell
 		}});
-		$("#req_radio").valitron('validate');
-		// both shorter then 5
-		$("#cust_text1, #cust_text2").valitron("validate", { rules: "max:5" });
-		// but second longer then 2 :)
-		$("#cust_text2").valitron("validate", { rules: "min:2", error: function(msg){
-			// add error class
-			this.addClass("error")
-		}} ).valitron("validate", { rules: "required", error: function(msg){
-			// oh its required too
-			this.addClass("require_error")
-		}});
+		// $("#req_radio").valitron('validate');
+		// // both shorter then 5
+		// $("#cust_text1, #cust_text2").valitron("validate", { rules: "max:5" });
+		// // but second longer then 2 :)
+		// $("#cust_text2").valitron("validate", { rules: "min:2", error: function(msg){
+		// 	// add error class
+		// 	$(this).addClass("error")
+		// }} ).valitron("validate", { rules: "required", error: function(msg){
+		// 	// oh its required too
+		// 	$(this).addClass("require_error")
+		// }});
 	});
 
 </script>
