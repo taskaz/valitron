@@ -12,7 +12,7 @@
 		# passes jQuery element and message, function(messagae) {}, this refers to jquery object
 		# global error will not be fired! return value witch evolutes to tru to fire it!
 		error : null
-		# executes before validation, if you return anything it will override validation rule check
+		# executes before validation, returned value will be used for testing!
 		beforeValidate : null
 		# executes after validation
 		afterValidate : null
@@ -77,7 +77,13 @@
 			return rule
 
 		check : ( method, parameters, options ) ->
-			_re = this.validations[method]?.call this, this.$el, parameters, this._resolveValue(this.$el)
+			# check if there is before callback
+			if typeof options.beforeValidate == "function"
+				_val = options.beforeValidate.call this.el, method, parameters, options
+			if _val == null # check if before validation callback returns anything, if not parse value
+				_val = this._resolveValue(this.$el)
+
+			_re = this.validations[method]?.call this, this.$el, parameters, _val
 			if _re != null and _re != undefined # check if something is returned
 				# console.log $this.valitron.ruleReturns
 				# validation passed
@@ -99,6 +105,8 @@
 					else config.globError?.call(this.el, _re.message, method, parameters)
 					if _ret
 						config.globError?.call(this.el, _re.message, method, parameters)
+				if typeof options.afterValidate == "function"
+					options.afterValidate.call this.el, _re.result, _re.message, method, parameters
 			return _re;
 
 		_extendRules : (rules) ->
@@ -270,7 +278,7 @@
 			# validate url
 			url : (el, parameters, value) ->
 				console.log "Open for suggestions..."
-				
+
 			# validate that value is letter only
 			alpha : (el, parameters, value) ->
 				pattern = '/^([a-z])+$/i'
