@@ -74,8 +74,14 @@
         return rule;
       },
       check: function(method, parameters, options) {
-        var _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ret;
-        _re = (_ref = this.validations[method]) != null ? _ref.call(this, this.$el, parameters, this._resolveValue(this.$el)) : void 0;
+        var _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ret, _val;
+        if (typeof options.beforeValidate === "function") {
+          _val = options.beforeValidate.call(this.el, method, parameters, options);
+        }
+        if (_val === null) {
+          _val = this._resolveValue(this.$el);
+        }
+        _re = (_ref = this.validations[method]) != null ? _ref.call(this, this.$el, parameters, _val) : void 0;
         if (_re !== null && _re !== void 0) {
           if (_re.result === true) {
             if (typeof options.success === "function") {
@@ -103,6 +109,9 @@
                 _ref6.call(this.el, _re.message, method, parameters);
               }
             }
+          }
+          if (typeof options.afterValidate === "function") {
+            options.afterValidate.call(this.el, _re.result, _re.message, method, parameters);
           }
         }
         return _re;
