@@ -2,8 +2,10 @@
 <html>
 <head>
 	<link href="http://localhost/valitron/valitron/bootstrap.css" media="all" type="text/css" rel="stylesheet">
+	<link href="http://localhost/valitron/valitron/qunit.css" media="all" type="text/css" rel="stylesheet">
 	<script src="http://localhost/valitron/valitron/jquery-1.7.1.js"></script>
 	<script src="http://localhost/valitron/valitron/valitron.js"></script>
+	<script src="http://localhost/valitron/valitron/qunit.js"></script>
 	<title>Valitron - Client side validation for Laravel</title>
 	<style type="text/css">
 		.require_error
@@ -43,34 +45,42 @@
 		<textarea style="width:100%" name="errors_field" id="errors_field" cols="30" rows="2"></textarea>
 	</div>
 	<p class="center"><button class="btn btn-primary" id="validate_all">Validate them ALL!</button></p>
+
+<h1 id="qunit-header">QUnit example</h1>
+<h2 id="qunit-banner"></h2>
+<div id="qunit-testrunner-toolbar"></div>
+<h2 id="qunit-userAgent"></h2>
+<ol id="qunit-tests"></ol>
+<div id="qunit-fixture">test markup, will be hidden</div>
+
 </body>
 <script type="text/javascript">
 	// cache error area variable
-	var err_area = $("#errors_field").val("");
-	var err_no = 0;
-	// Hook global valitron error handler to post errors in textarea
-	$.valitron('config', { 
-		globError : function(msg, rule, params)
-		{
-			err_area.val((err_no++)+": "+$(this).attr('id')+" "+msg+"\n"+err_area.val());
-			$(this).addClass("error");
-			console.log($(this), msg, rule, params);
-		}
-	});
-	$("#validate_all").click(function(){
+	// var err_area = $("#errors_field").val("");
+	// var err_no = 0;
+	// // Hook global valitron error handler to post errors in textarea
+	// $.valitron('config', { 
+	// 	globError : function(msg, rule, params)
+	// 	{
+	// 		err_area.val((err_no++)+": "+$(this).attr('id')+" "+msg+"\n"+err_area.val());
+	// 		$(this).addClass("error");
+	// 		console.log($(this), msg, rule, params);
+	// 	}
+	// });
+	// $("#validate_all").click(function(){
 
-		// validate multiple at once, optional callbacks and rules will work in both validations
-		// example $("#req_text, #req_passwd").valitron('validate', {error:function(msg){alert(msg)}}) 
-		$("#req_text").valitron("validate");
-		$("#req_text").valitron("validate", { rules:"min:2", error: function(msg, rule, params){
-			console.log("Custom error handler echo:",msg, rule, params);
-		}});
-		$("#req_checkbox").valitron('check', { error:function(msg){
-			console.log(this);
-			// $("<span>MUST CHECK ME!</span>").insertAfter(this); // put some random error
-			$(this).attr("checked", "true"); // and check it :D
-			return true; // return anyting to trigger globalcallback aswell
-		}});
+	// // 	// validate multiple at once, optional callbacks and rules will work in both validations
+	// // 	// example $("#req_text, #req_passwd").valitron('validate', {error:function(msg){alert(msg)}}) 
+	// 	$("#req_text").valitron("validate");
+	// 	$("#req_text").valitron("validate", { rules:"min:2", afterValidate: function(msg, rule, params){
+	// 		console.log("Custom error handler echo:",msg, rule, params);
+	// 	}});
+	// 	$("#req_checkbox").valitron('check', { error:function(msg){
+	// 		console.log(this);
+	// 		// $("<span>MUST CHECK ME!</span>").insertAfter(this); // put some random error
+	// 		$(this).attr("checked", "true"); // and check it :D
+	// 		return true; // return anyting to trigger globalcallback aswell
+	// 	}});
 		// $("#req_radio").valitron('validate');
 		// // both shorter then 5
 		// $("#cust_text1, #cust_text2").valitron("validate", { rules: "max:5" });
@@ -82,6 +92,17 @@
 		// 	// oh its required too
 		// 	$(this).addClass("require_error")
 		// }});
+	// });
+
+	module("Max validation");
+	test("Test max rule-'max:10' value='5'", function(){
+		var _ret=false;
+		$('<input data-validation="max:10" type="text" value="5">').valitron("validate", {
+			afterValidate: function(ret){
+				_ret = ret;
+			}
+		}).valitron("isValid");
+		ok( _ret, "Test failed");
 	});
 
 </script>
