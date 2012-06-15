@@ -31,8 +31,8 @@
       this.$el = $(element);
       _d_opts = this._parseRules(this.$el.data(config.ruleDataElement));
       this.options = {};
-      this._extendOptions(defaults);
-      this._extendOptions(options);
+      this.options = this._extendOptions(defaults);
+      this.options = this._extendOptions(options);
       if (this.options.rules !== null || typeof this.options.rules !== "undefined") {
         this.options.rules = this.options.rules.concat(_d_opts);
       } else {
@@ -78,7 +78,7 @@
         if (typeof options.beforeValidate === "function") {
           _val = options.beforeValidate.call(this.el, method, parameters, options);
         }
-        if (_val === null) {
+        if (_val === null || _val === void 0) {
           _val = this._resolveValue(this.$el);
         }
         _re = (_ref = this.validations[method]) != null ? _ref.call(this, this.$el, parameters, _val) : void 0;
@@ -116,15 +116,6 @@
         }
         return _re;
       },
-      _extendRules: function(rules) {
-        var _ref, _rls;
-        _rls = this._parseRules(rules);
-        if (((_ref = this.options) != null ? _ref.rules : void 0) != null) {
-          return this.options.rules = this.options.rules.concat(_rls);
-        } else {
-          return this.options.rules = _rls;
-        }
-      },
       _ruleMsg: function(res, transl, msg) {
         var _r;
         _r = {
@@ -140,20 +131,28 @@
       _invalidMsg: function(transl, msg) {
         return this._ruleMsg(false, transl, msg);
       },
-      _extendOptions: function(options) {
-        var _rls;
-        if (options === null || typeof options === "undefined") {
-          return;
+      _extendRules: function(rules) {
+        var _ref, _rls;
+        _rls = this._parseRules(rules);
+        if (((_ref = this.options) != null ? _ref.rules : void 0) != null) {
+          _rls = this.options.rules.concat(_rls);
         }
-        _rls = this.options.rules;
-        $.extend(true, this.options, options);
-        this.options.rules = _rls;
-        this._extendRules(options != null ? options.rules : void 0);
+        return _rls;
+      },
+      _extendOptions: function(options) {
+        var _rls, _t_opts;
+        if (options === null || typeof options === "undefined") {
+          return $.extend(true, {}, defaults);
+        }
+        _rls = this._extendRules((options != null ? options.rules : void 0) != null);
+        _t_opts = $.extend(true, {}, this.options, options);
+        _t_opts.rules = _rls;
+        return _t_opts;
       },
       init: function() {},
       validate: function(options) {
         var self, _valid;
-        this._extendOptions(options);
+        this.options = this._extendOptions(options);
         self = this;
         _valid = true;
         $.each.call(this, this.options.rules, function(idx, value) {
@@ -389,19 +388,19 @@
       });
     };
     $.valitron = function(cfg, options) {
-      if (options != null) {
+      if ((options != null) && typeof options !== void 0) {
         if (cfg === "config") {
           return $.extend(true, config, options);
         }
         if (cfg === "rule_defaults") {
-          return $.extend(true, config, options);
+          return $.extend(true, defaults, options);
         }
       } else {
         if (cfg === "config") {
           return config;
         }
         if (cfg === "rule_defaults") {
-          return options;
+          return defaults;
         }
       }
     };
