@@ -6,6 +6,26 @@
 	<script src="http://localhost/valitron/valitron/jquery-1.7.1.js"></script>
 	<script src="http://localhost/valitron/valitron/valitron.js"></script>
 	<script src="http://localhost/valitron/valitron/qunit.js"></script>
+
+	<script src="http://localhost/valitron/valitron/tests/accepted.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/after.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/alpha.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/alpha_dash.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/alpha_num.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/before.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/email.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/in.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/integer.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/ipv4.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/max.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/min.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/notin.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/numeric.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/regex.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/require.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/same.test.js"></script>
+	<script src="http://localhost/valitron/valitron/tests/size.test.js"></script>
+
 	<title>Valitron - Client side validation for Laravel</title>
 	<style type="text/css">
 		.require_error
@@ -95,27 +115,7 @@
 		// }});
 	// });
 
-	module("Max validation");
-	test("Test number max rule-'max:10' value='5'", function(){
-		var _ret = $('<input data-validation="max:10" type="text" value="5">').valitron("validate");
-		ok( _ret, "Test failed");
-	});
-	test("Test number max rule-'max:10' value='15'", function(){
-		var _ret = $('<input data-validation="max:10" type="text" value="5">').valitron("validate");
-		ok( _ret, "Test failed");
-	});
-	test("Test string max rule-'max:10' value='the test'", function(){
-		var _ret = $('<input data-validation="max:10" type="text" value="the test">').valitron("validate");
-		ok( _ret, "Test failed");
-	});
-	test("Test string max rule-'max:10' value='fail test here'", function(){
-		var _ret = $('<input data-validation="max:10" type="text" value="fail test here">').valitron("validate").valitron("isInvalid");
-		ok( _ret, "Test failed");
-	});
-	test("Test string max rule-'max:10' value='fail test here'", function(){
-		var _ret = $('<p></p>').valitron("validateRule", null, "max", ["10"], 15);
-		ok( _ret.result, "Test failed");
-	});
+
 
 </script>
 </html>
