@@ -76,40 +76,6 @@
 					rule.push _t
 			return rule
 
-		check : ( method, parameters, options ) ->
-			# check if there is before callback
-
-			if typeof options.beforeValidate == "function"
-				_val = options.beforeValidate.call this.el, method, parameters, options
-			if _val == null or _val ==undefined # check if before validation callback returns anything, if not parse value
-				_val = this._resolveValue(this.$el)
-
-			_re = this.validations[method]?.call this, this.$el, parameters, _val
-			if _re != null and _re != undefined # check if something is returned
-				# console.log $this.valitron.ruleReturns
-				# validation passed
-				if _re.result == true
-					# if if element validation has success callback execute it
-					if typeof options.success == "function"
-						# call element validation callback, if returns something call globalSuccess colback too
-						_ret = options.success?.call(this.el, _re.message, method, parameters) 
-					# if not execute global callback
-					else 
-						config.globSuccess?.call(this.el, _re.message, method, parameters)
-					# if element success callback returns anything call globalSuccess too
-					if _ret
-						config.globSuccess?.call(this.el, _re.message, method, parameters)
-				# failed test, same checks as success case
-				else
-					if typeof options.error == "function"
-						_ret = options.error?.call(this.el, _re.message, method, parameters)
-					else config.globError?.call(this.el, _re.message, method, parameters)
-					if _ret
-						config.globError?.call(this.el, _re.message, method, parameters)
-				if typeof options.afterValidate == "function"
-					options.afterValidate.call this.el, _re.result, _re.message, method, parameters
-			return _re;
-
 		_ruleMsg : (res, transl, msg) ->
 			_r =
 				result : res
@@ -149,7 +115,50 @@
 		# initialization logic
 		init : ->
 			# console.log "Init"
-			return
+			return "Test init"
+
+		check : ( method, parameters, options ) ->
+			# check if there is before callback
+
+			if typeof options.beforeValidate == "function"
+				_r_bfr = options.beforeValidate.call this.el, method, parameters, options
+			if _r_bfr == null or _r_bfr ==undefined # check if before validation callback returns anything, if not parse value
+				_r_bfr = this._resolveValue(this.$el)
+
+			_re = this.validateRule.call this, this.$el, method, parameters, _r_bfr
+			if _re != null and _re != undefined # check if something is returned
+				# console.log $this.valitron.ruleReturns
+				# validation passed
+				if _re.result == true
+					# if if element validation has success callback execute it
+					if typeof options.success == "function"
+						# call element validation callback, if returns something call globalSuccess colback too
+						_ret = options.success?.call(this.el, _re.message, method, parameters) 
+					# if not execute global callback
+					else 
+						config.globSuccess?.call(this.el, _re.message, method, parameters)
+					# if element success callback returns anything call globalSuccess too
+					if _ret
+						config.globSuccess?.call(this.el, _re.message, method, parameters)
+				# failed test, same checks as success case
+				else
+					if typeof options.error == "function"
+						_ret = options.error?.call(this.el, _re.message, method, parameters)
+					else config.globError?.call(this.el, _re.message, method, parameters)
+					if _ret
+						config.globError?.call(this.el, _re.message, method, parameters)
+				if typeof options.afterValidate == "function"
+					options.afterValidate.call this.el, _re.result, _re.message, method, parameters
+			return _re;
+
+		validateRule : (el, method, parameters, value)->
+			if el.constructor == Array
+				method = el[1]
+				parameters = el[2]
+				value = el[3]
+				el = el[0]
+			# console.log "VR:", el, method, parameters, value
+			this.validations[method]?.call this, el, parameters, value
 
 		validate : (options) ->
 			this.options = this._extendOptions(options)
@@ -176,17 +185,20 @@
 			console.log this.el
 			console.log this.options
 			console.log config
+			return this.$el
 
 
 	Valitron.prototype.validations =
 			# validate max value
 			max : (el, parameters, value) ->
+				console.log "MAX", el, parameters, value
 				if typeof value == "number" and value > parameters[0]
 					return this._invalidMsg null, "Number is bigger then #{parameters}!"
 				else if typeof value == "string" and value.length > parameters[0]
 					this._invalidMsg null, "String is to long, should be max:#{parameters}!"
 				else
 					return this._validMsg  null, "Grats man"
+
 			# validate min value
 			min: (el, parameters, value) ->
 				if typeof value == "number" and value < parameters[0]
@@ -335,20 +347,27 @@
 	$.fn[valitron_name] = (method, opts)->
 		# create plugin instances for each selected element
 		options = opts
-		return this.each ->
+		args = arguments
+		_t = $.map this, (el, idx) ->
 			# check if its created on selected element
-			_val = $.data this, valitron_name
+			_val = $.data el, valitron_name
 			if !_val
-				$.data this, valitron_name, _val = new Valitron( this )
-
+				$.data el, valitron_name, _val = new Valitron( el )
 			if typeof _val[method] == "function" and method.charAt 0 != "_"
-				return _val[method] options
+				_ret = _val[method] Array.prototype.slice.call args, 1
+				# console.log "M:", method, options, _ret = _val[method] options
+				if _ret?
+					return _ret
+				else
+					return $(el)
 			else if typeof method == 'object' # passing only options :)
-				return _val.setOptions method
+				_val.setOptions method
+				return $(el)
 			else
 				$.error "Method #{method} does not exists on jQuery.valitron"
-
-		# return
+			return $(el)
+		# console.log "R:", _t[0]
+		return _t[0]
 	
 	$.valitron = (cfg, options)->
 		if options? and typeof options != undefined
