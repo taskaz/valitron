@@ -97,43 +97,25 @@
 
 	module("Max validation");
 	test("Test number max rule-'max:10' value='5'", function(){
-		var _ret;
-		$('<input data-validation="max:10" type="text" value="5">').valitron("validate", {
-			afterValidate: function(ret){
-				_ret = ret;
-			}
-		});
+		var _ret = $('<input data-validation="max:10" type="text" value="5">').valitron("validate");
 		ok( _ret, "Test failed");
 	});
 	test("Test number max rule-'max:10' value='15'", function(){
-		var _ret;
-		$('<input data-validation="max:10" type="text" value="5">').valitron("validate", {
-			afterValidate: function(ret){
-				_ret = ret;
-			}
-		});
+		var _ret = $('<input data-validation="max:10" type="text" value="5">').valitron("validate");
 		ok( _ret, "Test failed");
 	});
 	test("Test string max rule-'max:10' value='the test'", function(){
-		var _ret;
-		$('<input data-validation="max:10" type="text" value="the test">').valitron("validate", {
-			afterValidate: function(ret){
-				_ret = ret;
-			}
-		});
+		var _ret = $('<input data-validation="max:10" type="text" value="the test">').valitron("validate");
 		ok( _ret, "Test failed");
 	});
 	test("Test string max rule-'max:10' value='fail test here'", function(){
-		var _ret;
-		$('<input data-validation="max:5" type="text" value="fail test here">').valitron("validate", {
-			afterValidate: function(ret, msg){
-				_ret = ret;
-				console.log(ret, msg)
-			}
-		});
-		ok( !_ret, "Test failed");
+		var _ret = $('<input data-validation="max:10" type="text" value="fail test here">').valitron("validate").valitron("isInvalid");
+		ok( _ret, "Test failed");
 	});
-	console.log($.valitron("rule_defaults"));
+	test("Test string max rule-'max:10' value='fail test here'", function(){
+		var _ret = $('<p></p>').valitron("validateRule", null, "max", ["10"], 15);
+		ok( _ret.result, "Test failed");
+	});
 
 </script>
 </html>
