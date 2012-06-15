@@ -191,7 +191,6 @@
 	Valitron.prototype.validations =
 			# validate max value
 			max : (el, parameters, value) ->
-				console.log "MAX", el, parameters, value
 				if typeof value == "number" and value > parameters[0]
 					return this._invalidMsg null, "Number is bigger then #{parameters}!"
 				else if typeof value == "string" and value.length > parameters[0]
@@ -221,6 +220,7 @@
 						return this._invalidMsg null, "Value must be between "+parameters[0]+" and "+parameters[1];
 					else return this._validMsg null, "Value is between "+parameters[0]+" and "+parameters[1];
 				else return this._invalidMsg null, "Bad parameters provided"
+
 			# element value is numeric, so its in or double
 			numeric : (el, parameters, value) ->
 
@@ -230,6 +230,7 @@
 				if patern.test value 
 					return this._validMsg null, "Its integer allright."
 				else return this._invalidMsg null, "Not integer man."
+				
 			# value for element is required
 			required : (el, parameters, value) ->
 				if value == null or value == undefined
@@ -347,14 +348,19 @@
 	$.fn[valitron_name] = (method, opts)->
 		# create plugin instances for each selected element
 		options = opts
-		args = arguments
+		args = Array.prototype.slice.call arguments, 1
+		rule_patt = /^rule_/i
 		_t = $.map this, (el, idx) ->
 			# check if its created on selected element
 			_val = $.data el, valitron_name
 			if !_val
 				$.data el, valitron_name, _val = new Valitron( el )
+			# call for pure validation functions no callbacks will be provided, and no chainability support!
+			if rule_patt.test method
+				return _val.validations[method.substr(5)]?.apply _val, args
+
 			if typeof _val[method] == "function" and method.charAt 0 != "_"
-				_ret = _val[method] Array.prototype.slice.call args, 1
+				_ret = _val[method] args
 				# console.log "M:", method, options, _ret = _val[method] options
 				if _ret?
 					return _ret
@@ -368,18 +374,21 @@
 			return $(el)
 		# console.log "R:", _t[0]
 		return _t[0]
-	
-	$.valitron = (cfg, options)->
-		if options? and typeof options != undefined
-			if cfg == "config"
-				return $.extend(true, config, options)
-			if cfg == "rule_defaults"
-				return $.extend(true, defaults, options)
-		else
-			if cfg == "config"
-				return config
-			if cfg == "rule_defaults"
-				return defaults
+	# for weirdos
+	$.valitron = (el, options)->
+
+		$.fn[valitron_name].apply el, Array.prototype.slice.call arguments, 1
+
+		# if options? and typeof options != undefined
+		# 	if cfg == "config"
+		# 		return $.extend(true, config, options)
+		# 	if cfg == "rule_defaults"
+		# 		return $.extend(true, defaults, options)
+		# else
+		# 	if cfg == "config"
+		# 		return config
+		# 	if cfg == "rule_defaults"
+		# 		return defaults
 
 	return
 
