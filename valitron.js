@@ -192,7 +192,6 @@
     };
     Valitron.prototype.validations = {
       max: function(el, parameters, value) {
-        console.log("MAX", el, parameters, value);
         if (typeof value === "number" && value > parameters[0]) {
           return this._invalidMsg(null, "Number is bigger then " + parameters + "!");
         } else if (typeof value === "string" && value.length > parameters[0]) {
@@ -384,17 +383,21 @@
       }
     };
     $.fn[valitron_name] = function(method, opts) {
-      var args, options, _t;
+      var args, options, rule_patt, _t;
       options = opts;
-      args = arguments;
+      args = Array.prototype.slice.call(arguments, 1);
+      rule_patt = /^rule_/i;
       _t = $.map(this, function(el, idx) {
-        var _ret, _val;
+        var _ref, _ret, _val;
         _val = $.data(el, valitron_name);
         if (!_val) {
           $.data(el, valitron_name, _val = new Valitron(el));
         }
+        if (rule_patt.test(method)) {
+          return (_ref = _val.validations[method.substr(5)]) != null ? _ref.apply(_val, args) : void 0;
+        }
         if (typeof _val[method] === "function" && method.charAt(0 !== "_")) {
-          _ret = _val[method](Array.prototype.slice.call(args, 1));
+          _ret = _val[method](args);
           if (_ret != null) {
             return _ret;
           } else {
@@ -410,22 +413,8 @@
       });
       return _t[0];
     };
-    $.valitron = function(cfg, options) {
-      if ((options != null) && typeof options !== void 0) {
-        if (cfg === "config") {
-          return $.extend(true, config, options);
-        }
-        if (cfg === "rule_defaults") {
-          return $.extend(true, defaults, options);
-        }
-      } else {
-        if (cfg === "config") {
-          return config;
-        }
-        if (cfg === "rule_defaults") {
-          return defaults;
-        }
-      }
+    $.valitron = function(el, options) {
+      return $.fn[valitron_name].apply(el, Array.prototype.slice.call(arguments, 1));
     };
   })(jQuery, window, document);
 
