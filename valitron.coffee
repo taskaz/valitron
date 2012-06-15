@@ -37,8 +37,8 @@
 		_d_opts = this._parseRules this.$el.data config.ruleDataElement
 		# this.options = defaults
 		this.options = {}
-		this._extendOptions defaults
-		this._extendOptions options
+		this.options = this._extendOptions defaults
+		this.options = this._extendOptions options
 		if this.options.rules != null or typeof this.options.rules != "undefined"
 			this.options.rules = this.options.rules.concat _d_opts
 		else this.options.rules = _d_opts
@@ -78,9 +78,10 @@
 
 		check : ( method, parameters, options ) ->
 			# check if there is before callback
+
 			if typeof options.beforeValidate == "function"
 				_val = options.beforeValidate.call this.el, method, parameters, options
-			if _val == null # check if before validation callback returns anything, if not parse value
+			if _val == null or _val ==undefined # check if before validation callback returns anything, if not parse value
 				_val = this._resolveValue(this.$el)
 
 			_re = this.validations[method]?.call this, this.$el, parameters, _val
@@ -109,12 +110,6 @@
 					options.afterValidate.call this.el, _re.result, _re.message, method, parameters
 			return _re;
 
-		_extendRules : (rules) ->
-			_rls = this._parseRules(rules)
-			if this.options?.rules?
-				this.options.rules = this.options.rules.concat _rls
-			else this.options.rules = _rls
-
 		_ruleMsg : (res, transl, msg) ->
 			_r =
 				result : res
@@ -133,13 +128,22 @@
 		_invalidMsg : (transl, msg) ->
 			return this._ruleMsg false, transl, msg
 
+		_extendRules : (rules) ->
+			_rls = this._parseRules(rules)
+			if this.options?.rules?
+				_rls = this.options.rules.concat _rls
+			return _rls
+
 		_extendOptions : (options) ->
-			if options == null or typeof options == "undefined" then return
-			_rls = this.options.rules
-			$.extend(true, this.options, options)
-			this.options.rules = _rls
-			this._extendRules(options?.rules)
-			return
+			if options == null or typeof options == "undefined" then return $.extend(true, {}, defaults)
+			# Extend current rules and save to temp var
+			_rls = this._extendRules(options?.rules?)
+
+			# Extend current options
+			_t_opts = $.extend(true, {}, this.options, options)
+			# Save extended rules to temorary options object
+			_t_opts.rules = _rls
+			return _t_opts
 
 
 		# initialization logic
@@ -148,7 +152,7 @@
 			return
 
 		validate : (options) ->
-			this._extendOptions(options)
+			this.options = this._extendOptions(options)
 			# applie rules
 			self = this;
 			_valid = true
@@ -347,16 +351,16 @@
 		# return
 	
 	$.valitron = (cfg, options)->
-		if options?
+		if options? and typeof options != undefined
 			if cfg == "config"
 				return $.extend(true, config, options)
 			if cfg == "rule_defaults"
-				return $.extend(true, config, options)
+				return $.extend(true, defaults, options)
 		else
 			if cfg == "config"
 				return config
 			if cfg == "rule_defaults"
-				return options
+				return defaults
 
 	return
 
