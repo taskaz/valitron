@@ -27,7 +27,7 @@
 		<h1>Valitron - Client side validation for Laravel</h1>
 	</div>
 	<hr>
-	<div class="well">
+	<div style="display:none" class="well">
 		<h3>Manual validation and expieriance field</h3>
 		<p><h4>Required validation</h4>
 			<input id="req_text" data-validation="required|max:10" type="text" placeholder="Required text input">
@@ -43,8 +43,9 @@
 			<input type="text" id="cust_text2" placeholder="Custom field">
 		</p>
 		<textarea style="width:100%" name="errors_field" id="errors_field" cols="30" rows="2"></textarea>
+		<p class="center"><button class="btn btn-primary" id="validate_all">Validate them ALL!</button></p>
 	</div>
-	<p class="center"><button class="btn btn-primary" id="validate_all">Validate them ALL!</button></p>
+
 
 <h1 id="qunit-header">QUnit example</h1>
 <h2 id="qunit-banner"></h2>
@@ -95,15 +96,44 @@
 	// });
 
 	module("Max validation");
-	test("Test max rule-'max:10' value='5'", function(){
-		var _ret=false;
+	test("Test number max rule-'max:10' value='5'", function(){
+		var _ret;
 		$('<input data-validation="max:10" type="text" value="5">').valitron("validate", {
 			afterValidate: function(ret){
 				_ret = ret;
 			}
-		}).valitron("isValid");
+		});
 		ok( _ret, "Test failed");
 	});
+	test("Test number max rule-'max:10' value='15'", function(){
+		var _ret;
+		$('<input data-validation="max:10" type="text" value="5">').valitron("validate", {
+			afterValidate: function(ret){
+				_ret = ret;
+			}
+		});
+		ok( _ret, "Test failed");
+	});
+	test("Test string max rule-'max:10' value='the test'", function(){
+		var _ret;
+		$('<input data-validation="max:10" type="text" value="the test">').valitron("validate", {
+			afterValidate: function(ret){
+				_ret = ret;
+			}
+		});
+		ok( _ret, "Test failed");
+	});
+	test("Test string max rule-'max:10' value='fail test here'", function(){
+		var _ret;
+		$('<input data-validation="max:5" type="text" value="fail test here">').valitron("validate", {
+			afterValidate: function(ret, msg){
+				_ret = ret;
+				console.log(ret, msg)
+			}
+		});
+		ok( !_ret, "Test failed");
+	});
+	console.log($.valitron("rule_defaults"));
 
 </script>
 </html>
