@@ -11,14 +11,18 @@
       error: null,
       beforeValidate: null,
       afterValidate: null,
-      valid: false
+      valid: false,
+      timeout: false,
+      timer: null
     };
     config = {
       globSuccess: function(msg) {
-        return $(this).removeClass("error");
+        $(this).removeClass("error");
+        return console.log("GLOBAL SUCCESS:", msg, this);
       },
       globError: function(msg) {
-        return $(this).addClass("error");
+        $(this).addClass("error");
+        return console.log("GLOBAL ERROR:", msg, this);
       },
       ruleDelimiter: "|",
       ruleMethodDelimiter: ":",
@@ -88,6 +92,13 @@
       _invalidMsg: function(transl, msg) {
         return this._ruleMsg(false, transl, msg);
       },
+      _condMsg: function(cond, true_transl, true_msg, false_transl, false_smg) {
+        if (cond) {
+          return this._validMsg(true_transl, true_msg);
+        } else {
+          return this._invalidMsg(false_transl, false_smg);
+        }
+      },
       _extendRules: function(rules) {
         var _ref, _rls;
         _rls = this._parseRules(rules);
@@ -98,63 +109,70 @@
       },
       _extendOptions: function(options) {
         var _rls, _t_opts;
-        if (options === null || typeof options === "undefined") {
-          return $.extend(true, {}, defaults);
+        if (this.options === null || typeof this.options === void 0) {
+          return $.extend(true, this.options, defaults);
+        }
+        if (options === null || typeof options === void 0) {
+          return this.options;
         }
         _rls = this._extendRules((options != null ? options.rules : void 0) != null);
         _t_opts = $.extend(true, {}, this.options, options);
         _t_opts.rules = _rls;
         return _t_opts;
       },
-      init: function() {
-        return "Test init";
-      },
-      check: function(method, parameters, options) {
-        var _r_bfr, _re, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
-        if (typeof options.beforeValidate === "function") {
-          _r_bfr = options.beforeValidate.call(this.el, method, parameters, options);
+      _callBefore: function() {
+        var _r_bfr;
+        if (typeof this.options.beforeValidate === "function") {
+          _r_bfr = this.options.beforeValidate.call(this.el(this.options));
         }
         if (_r_bfr === null || _r_bfr === void 0) {
           _r_bfr = this._resolveValue(this.$el);
         }
-        _re = this.validateRule.call(this, this.$el, method, parameters, _r_bfr);
-        if (_re !== null && _re !== void 0) {
-          if (_re.result === true) {
-            if (typeof options.success === "function") {
-              _ret = (_ref = options.success) != null ? _ref.call(this.el, _re.message, method, parameters) : void 0;
+        return _r_bfr;
+      },
+      _callAfter: function(result) {
+        if (typeof this.options.afterValidate === "function") {
+          this.options.afterValidate.call(this.el, result);
+        }
+      },
+      _callCallbacks: function(result, options) {
+        var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
+        if (result !== null && result !== void 0) {
+          if (this.isValid() === true) {
+            if (typeof this.options.success === "function") {
+              _ret = (_ref = this.options.success) != null ? _ref.call(this.el, result) : void 0;
             } else {
               if ((_ref1 = config.globSuccess) != null) {
-                _ref1.call(this.el, _re.message, method, parameters);
+                _ref1.call(this.el, result);
               }
             }
             if (_ret) {
               if ((_ref2 = config.globSuccess) != null) {
-                _ref2.call(this.el, _re.message, method, parameters);
+                _ref2.call(this.el, result);
               }
             }
           } else {
-            if (typeof options.error === "function") {
-              _ret = (_ref3 = options.error) != null ? _ref3.call(this.el, _re.message, method, parameters) : void 0;
+            if (typeof this.options.error === "function") {
+              _ret = (_ref3 = this.options.error) != null ? _ref3.call(this.el, result) : void 0;
             } else {
               if ((_ref4 = config.globError) != null) {
-                _ref4.call(this.el, _re.message, method, parameters);
+                _ref4.call(this.el, result);
               }
             }
             if (_ret) {
               if ((_ref5 = config.globError) != null) {
-                _ref5.call(this.el, _re.message, method, parameters);
+                _ref5.call(this.el, result);
               }
             }
           }
-          if (typeof options.afterValidate === "function") {
-            options.afterValidate.call(this.el, _re.result, _re.message, method, parameters);
-          }
         }
-        return _re;
+      },
+      init: function() {
+        return "Test init";
       },
       validateRule: function(el, method, parameters, value) {
         var _ref;
-        if (el.constructor === Array) {
+        if (((el != null ? el.constructor : void 0) != null) === Array) {
           method = el[1];
           parameters = el[2];
           value = el[3];
@@ -163,18 +181,49 @@
         return (_ref = this.validations[method]) != null ? _ref.call(this, el, parameters, value) : void 0;
       },
       validate: function(options) {
-        var self, _valid;
-        this.options = this._extendOptions(options);
+        var self, _r_bfr, _result, _valid;
+        this.options = this._extendOptions(options != null ? options[0] : void 0);
         self = this;
+        _result = [];
         _valid = true;
+        _r_bfr = self._callBefore(self.options);
         $.each.call(this, this.options.rules, function(idx, value) {
           var _re;
-          _re = self.check(value[0], value[1], self.options);
+          _re = self.validateRule.call(self, self.$el, value[0], value[1], _r_bfr);
+          _result.push({
+            result: _re.result,
+            rule: value[0],
+            parameters: value[1],
+            message: _re.message,
+            translation: _re.translation
+          });
           if (_re.result === false) {
             _valid = false;
           }
         });
         this.options.valid = _valid;
+        this._callCallbacks(_result, this.options);
+        this._callAfter;
+        return this.$el;
+      },
+      live: function(options) {
+        var self, _opts;
+        self = this;
+        _opts = options[0];
+        if (self.options.timer) {
+          return this.$el;
+        }
+        this.options = this._extendOptions(_opts);
+        self.$el.on('keypress', function() {
+          if (self.options.timer) {
+            clearTimeout(self.options.timer);
+            self.options.timer = null;
+          }
+          self.options.timer = setTimeout(function() {
+            self.validate();
+            self.options.timeout;
+          });
+        });
         return this.$el;
       },
       isValid: function() {
@@ -188,6 +237,22 @@
         console.log(this.options);
         console.log(config);
         return this.$el;
+      },
+      config: function(options) {
+        if (options != null) {
+          $.extend(true, config, options);
+          return this.$el;
+        } else {
+          return config;
+        }
+      },
+      options: function(options) {
+        if (options[0] != null) {
+          defaults = this._extendOptions(options[0]);
+          return this.$el;
+        } else {
+          return defaults;
+        }
       }
     };
     Valitron.prototype.validations = {
