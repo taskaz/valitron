@@ -18,12 +18,18 @@
 		afterValidate : null
 		# indicates that vield is valid and doesnt contain any errors
 		valid : false
+		# Timeout for live validation
+		timeout : false
+		# Timer reference
+		timer: null
 
 	config =
 		globSuccess : (msg) -> # global success, this refers to jquery object
 			$(this).removeClass "error"
+			console.log "GLOBAL SUCCESS:", msg, this
 		globError : (msg) -> # global error, this refers to jquery object
 			$(this).addClass "error"
+			console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
 		ruleParamDelimiter: ","
@@ -76,6 +82,7 @@
 					rule.push _t
 			return rule
 
+		# general message constructor function, all rules sohuld return such structure
 		_ruleMsg : (res, transl, msg) ->
 			_r =
 				result : res
@@ -94,6 +101,11 @@
 		_invalidMsg : (transl, msg) ->
 			return this._ruleMsg false, transl, msg
 
+		_condMsg : (cond, true_transl, true_msg, false_transl, false_smg) ->
+			if cond 
+				return this._validMsg true_transl, true_msg
+			else return this._invalidMsg false_transl, false_smg
+
 		_extendRules : (rules) ->
 			_rls = this._parseRules(rules)
 			if this.options?.rules?
@@ -101,58 +113,64 @@
 			return _rls
 
 		_extendOptions : (options) ->
-			if options == null or typeof options == "undefined" then return $.extend(true, {}, defaults)
+			if this.options == null or typeof this.options == undefined then return $.extend(true, this.options, defaults)
+			if options == null or typeof options == undefined then return this.options
 			# Extend current rules and save to temp var
 			_rls = this._extendRules(options?.rules?)
-
+			
 			# Extend current options
-			_t_opts = $.extend(true, {}, this.options, options)
+			_t_opts = $.extend true, {}, this.options, options
 			# Save extended rules to temorary options object
 			_t_opts.rules = _rls
 			return _t_opts
 
+		_callBefore :  ->
+			# check if there is before callback
+			if typeof this.options.beforeValidate == "function"
+				_r_bfr = this.options.beforeValidate.call this.el this.options
+			if _r_bfr == null or _r_bfr ==undefined # check if before validation callback returns anything, if not parse value
+				_r_bfr = this._resolveValue(this.$el)	
+			return _r_bfr
 
+		# After filter for checking rules, 
+		# result is array of checked rules:
+		#	{ result:true/false, rule:"rule", paramters:[parameters], message:"message", translation:"translation_string" }
+		_callAfter : (result)->
+			if typeof this.options.afterValidate == "function"
+				this.options.afterValidate.call this.el, result
+			return
+
+		_callCallbacks : (result, options) ->
+
+			if result != null and result != undefined # check if something is returned
+				# console.log $this.valitron.ruleReturns
+				# validation passed
+				if this.isValid() == true
+					# if if element validation has success callback execute it
+					if typeof this.options.success == "function"
+						# call element validation callback, if returns something call globalSuccess colback too
+						_ret = this.options.success?.call(this.el, result) 
+					# if not execute global callback
+					else 
+						config.globSuccess?.call(this.el, result)
+					# if element success callback returns anything call globalSuccess too
+					if _ret
+						config.globSuccess?.call(this.el, result)
+				# failed test, same checks as success case
+				else
+					if typeof this.options.error == "function"
+						_ret = this.options.error?.call(this.el, result)
+					else config.globError?.call(this.el, result)
+					if _ret
+						config.globError?.call(this.el, result)
+			return
 		# initialization logic
 		init : ->
 			# console.log "Init"
 			return "Test init"
 
-		check : ( method, parameters, options ) ->
-			# check if there is before callback
-
-			if typeof options.beforeValidate == "function"
-				_r_bfr = options.beforeValidate.call this.el, method, parameters, options
-			if _r_bfr == null or _r_bfr ==undefined # check if before validation callback returns anything, if not parse value
-				_r_bfr = this._resolveValue(this.$el)
-
-			_re = this.validateRule.call this, this.$el, method, parameters, _r_bfr
-			if _re != null and _re != undefined # check if something is returned
-				# console.log $this.valitron.ruleReturns
-				# validation passed
-				if _re.result == true
-					# if if element validation has success callback execute it
-					if typeof options.success == "function"
-						# call element validation callback, if returns something call globalSuccess colback too
-						_ret = options.success?.call(this.el, _re.message, method, parameters) 
-					# if not execute global callback
-					else 
-						config.globSuccess?.call(this.el, _re.message, method, parameters)
-					# if element success callback returns anything call globalSuccess too
-					if _ret
-						config.globSuccess?.call(this.el, _re.message, method, parameters)
-				# failed test, same checks as success case
-				else
-					if typeof options.error == "function"
-						_ret = options.error?.call(this.el, _re.message, method, parameters)
-					else config.globError?.call(this.el, _re.message, method, parameters)
-					if _ret
-						config.globError?.call(this.el, _re.message, method, parameters)
-				if typeof options.afterValidate == "function"
-					options.afterValidate.call this.el, _re.result, _re.message, method, parameters
-			return _re;
-
 		validateRule : (el, method, parameters, value)->
-			if el.constructor == Array
+			if el?.constructor? == Array
 				method = el[1]
 				parameters = el[2]
 				value = el[3]
@@ -161,18 +179,51 @@
 			this.validations[method]?.call this, el, parameters, value
 
 		validate : (options) ->
-			this.options = this._extendOptions(options)
+			
+			this.options = this._extendOptions(options?[0])
 			# applie rules
 			self = this;
+			_result = []
 			_valid = true
+			_r_bfr = self._callBefore self.options
 			$.each.call this, this.options.rules, (idx, value) ->
 				# Validate the rule
-				_re = self.check value[0], value[1], self.options
+				_re = self.validateRule.call self, self.$el, value[0], value[1], _r_bfr
+				_result.push {
+						result:_re.result
+						rule: value[0]
+						parameters:value[1]
+						message: _re.message
+						translation: _re.translation
+						}
 				if _re.result == false
 					_valid = false
+					# console.log value[0], value[1]
 					return
-
 			this.options.valid = _valid
+			this._callCallbacks _result, this.options
+			this._callAfter
+			return this.$el # for chainability
+
+		# method to hook live field validation
+		live : (options) ->
+			self = this; # save valitron instance for event
+			# Put hook on element
+			_opts = options[0]
+			if self.options.timer then return this.$el 
+			this.options = this._extendOptions(_opts)
+			self.$el.on 'keypress', ->
+				if self.options.timer
+					clearTimeout self.options.timer
+					self.options.timer = null
+				
+				# pass all arguments to validate function
+				self.options.timer = 
+					setTimeout () -> 
+						self.validate()
+						self.options.timeout
+						return
+				return
 			return this.$el # for chainability
 
 		isValid : ->
@@ -186,7 +237,18 @@
 			console.log this.options
 			console.log config
 			return this.$el
+		# Default rule behaviour options setter/getter
+		config : (options) ->
+			if options?
+				$.extend true, config, options
+				return this.$el
+			else return config
 
+		options : (options) ->
+			if options[0]?
+				defaults = this._extendOptions options[0]
+				return this.$el
+			else return defaults
 
 	Valitron.prototype.validations =
 			# validate max value
@@ -230,7 +292,7 @@
 				if patern.test value 
 					return this._validMsg null, "Its integer allright."
 				else return this._invalidMsg null, "Not integer man."
-				
+
 			# value for element is required
 			required : (el, parameters, value) ->
 				if value == null or value == undefined
@@ -360,6 +422,7 @@
 				return _val.validations[method.substr(5)]?.apply _val, args
 
 			if typeof _val[method] == "function" and method.charAt 0 != "_"
+				# console.log method, args
 				_ret = _val[method] args
 				# console.log "M:", method, options, _ret = _val[method] options
 				if _ret?
