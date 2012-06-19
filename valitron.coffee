@@ -19,15 +19,15 @@
 		# indicates that vield is valid and doesnt contain any errors
 		valid : false
 		# Timeout for live validation
-		timeout : false
+		timeout : 500
 		# Timer reference
 		timer: null
 
 	config =
-		globSuccess : (msg) -> # global success, this refers to jquery object
+		globalSuccess : (msg) -> # global success, this refers to jquery object
 			$(this).removeClass "error"
 			console.log "GLOBAL SUCCESS:", msg, this
-		globError : (msg) -> # global error, this refers to jquery object
+		globalError : (msg) -> # global error, this refers to jquery object
 			$(this).addClass "error"
 			console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
@@ -152,17 +152,17 @@
 						_ret = this.options.success?.call(this.el, result) 
 					# if not execute global callback
 					else 
-						config.globSuccess?.call(this.el, result)
+						config.globalSuccess?.call(this.el, result)
 					# if element success callback returns anything call globalSuccess too
 					if _ret
-						config.globSuccess?.call(this.el, result)
+						config.globalSuccess?.call(this.el, result)
 				# failed test, same checks as success case
 				else
 					if typeof this.options.error == "function"
 						_ret = this.options.error?.call(this.el, result)
-					else config.globError?.call(this.el, result)
+					else config.globalError?.call(this.el, result)
 					if _ret
-						config.globError?.call(this.el, result)
+						config.globalError?.call(this.el, result)
 			return
 		# initialization logic
 		init : ->
@@ -218,11 +218,7 @@
 					self.options.timer = null
 				
 				# pass all arguments to validate function
-				self.options.timer = 
-					setTimeout () -> 
-						self.validate()
-						self.options.timeout
-						return
+				self.options.timer = `setTimeout( function() { self.validate() }, self.options.timeout )`
 				return
 			return this.$el # for chainability
 
@@ -340,7 +336,7 @@
 
 			# validate ip address
 			ipv4 : (el, parameters, value) ->
-				pattern = "/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g";
+				pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g;
 				if typeof value == "string"
 					if pattern.test value
 						return this._validMsg null, "Good IPv4 address"
@@ -360,7 +356,7 @@
 
 			# validate that value is letter only
 			alpha : (el, parameters, value) ->
-				pattern = '/^([a-z])+$/i'
+				pattern = /^([a-z])+$/i
 				if typeof value == "string"
 					if pattern.test value
 						return this._validMsg null, "This is alpha only"
@@ -369,7 +365,7 @@
 
 			# validate letters and numbers only
 			alpha_num : (el, parameters, value) ->
-				pattern = '/^([a-z0-9])+$/i'
+				pattern = /^([a-z0-9])+$/i
 				if typeof value == "string"
 					if pattern.test value
 						return this._validMsg null, "This is alpha only"
@@ -378,7 +374,7 @@
 
 			# validate letters numbers and dashes
 			alpha_dash : (el, parameters, value) ->
-				pattern = '/^([-a-z0-9_-])+$/i'
+				pattern = /^([-a-z0-9_-])+$/i
 				if typeof value == "string"
 					if pattern.test value
 						return this._validMsg null, "This is alpha only"
@@ -439,6 +435,18 @@
 		return _t[0]
 	# for weirdos
 	$.valitron = (el, options)->
+
+		if typeof el == "string"
+			if el =="config"
+				if options?
+					$.extend true, config, options
+					return this.$el
+				else return config
+			else if el == "options"
+				if options[0]?
+					defaults = this._extendOptions options[0]
+					return this.$el
+				else return defaults
 
 		$.fn[valitron_name].apply el, Array.prototype.slice.call arguments, 1
 
