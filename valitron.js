@@ -12,15 +12,15 @@
       beforeValidate: null,
       afterValidate: null,
       valid: false,
-      timeout: false,
+      timeout: 500,
       timer: null
     };
     config = {
-      globSuccess: function(msg) {
+      globalSuccess: function(msg) {
         $(this).removeClass("error");
         return console.log("GLOBAL SUCCESS:", msg, this);
       },
-      globError: function(msg) {
+      globalError: function(msg) {
         $(this).addClass("error");
         return console.log("GLOBAL ERROR:", msg, this);
       },
@@ -142,12 +142,12 @@
             if (typeof this.options.success === "function") {
               _ret = (_ref = this.options.success) != null ? _ref.call(this.el, result) : void 0;
             } else {
-              if ((_ref1 = config.globSuccess) != null) {
+              if ((_ref1 = config.globalSuccess) != null) {
                 _ref1.call(this.el, result);
               }
             }
             if (_ret) {
-              if ((_ref2 = config.globSuccess) != null) {
+              if ((_ref2 = config.globalSuccess) != null) {
                 _ref2.call(this.el, result);
               }
             }
@@ -155,12 +155,12 @@
             if (typeof this.options.error === "function") {
               _ret = (_ref3 = this.options.error) != null ? _ref3.call(this.el, result) : void 0;
             } else {
-              if ((_ref4 = config.globError) != null) {
+              if ((_ref4 = config.globalError) != null) {
                 _ref4.call(this.el, result);
               }
             }
             if (_ret) {
-              if ((_ref5 = config.globError) != null) {
+              if ((_ref5 = config.globalError) != null) {
                 _ref5.call(this.el, result);
               }
             }
@@ -219,10 +219,7 @@
             clearTimeout(self.options.timer);
             self.options.timer = null;
           }
-          self.options.timer = setTimeout(function() {
-            self.validate();
-            self.options.timeout;
-          });
+          self.options.timer = setTimeout( function() { self.validate() }, self.options.timeout );
         });
         return this.$el;
       },
@@ -357,7 +354,7 @@
       },
       ipv4: function(el, parameters, value) {
         var pattern;
-        pattern = "/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g";
+        pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g;
         if (typeof value === "string") {
           if (pattern.test(value)) {
             return this._validMsg(null, "Good IPv4 address");
@@ -382,7 +379,7 @@
       },
       alpha: function(el, parameters, value) {
         var pattern;
-        pattern = '/^([a-z])+$/i';
+        pattern = /^([a-z])+$/i;
         if (typeof value === "string") {
           if (pattern.test(value)) {
             return this._validMsg(null, "This is alpha only");
@@ -395,7 +392,7 @@
       },
       alpha_num: function(el, parameters, value) {
         var pattern;
-        pattern = '/^([a-z0-9])+$/i';
+        pattern = /^([a-z0-9])+$/i;
         if (typeof value === "string") {
           if (pattern.test(value)) {
             return this._validMsg(null, "This is alpha only");
@@ -408,7 +405,7 @@
       },
       alpha_dash: function(el, parameters, value) {
         var pattern;
-        pattern = '/^([-a-z0-9_-])+$/i';
+        pattern = /^([-a-z0-9_-])+$/i;
         if (typeof value === "string") {
           if (pattern.test(value)) {
             return this._validMsg(null, "This is alpha only");
@@ -479,6 +476,23 @@
       return _t[0];
     };
     $.valitron = function(el, options) {
+      if (typeof el === "string") {
+        if (el === "config") {
+          if (options != null) {
+            $.extend(true, config, options);
+            return this.$el;
+          } else {
+            return config;
+          }
+        } else if (el === "options") {
+          if (options[0] != null) {
+            defaults = this._extendOptions(options[0]);
+            return this.$el;
+          } else {
+            return defaults;
+          }
+        }
+      }
       return $.fn[valitron_name].apply(el, Array.prototype.slice.call(arguments, 1));
     };
   })(jQuery, window, document);
