@@ -25,10 +25,19 @@
 
 	config =
 		globalSuccess : (msg) -> # global success, this refers to jquery object
-			$(this).removeClass "error"
+			# Only this much is tied with twitter
+			parent = $(this).parent()
+			if parent.hasClass("controls") == true
+				grand = parent.parent()
+				if grand.hasClass("control-group")==true
+					grand.removeClass "error"
 			console.log "GLOBAL SUCCESS:", msg, this
 		globalError : (msg) -> # global error, this refers to jquery object
-			$(this).addClass "error"
+			parent = $(this).parent()
+			if parent.hasClass("controls") == true
+				grand = parent.parent()
+				if grand.hasClass("control-group")==true
+					grand.addClass "error"
 			console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
