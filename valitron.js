@@ -17,11 +17,25 @@
     };
     config = {
       globalSuccess: function(msg) {
-        $(this).removeClass("error");
+        var grand, parent;
+        parent = $(this).parent();
+        if (parent.hasClass("controls") === true) {
+          grand = parent.parent();
+          if (grand.hasClass("control-group") === true) {
+            grand.removeClass("error");
+          }
+        }
         return console.log("GLOBAL SUCCESS:", msg, this);
       },
       globalError: function(msg) {
-        $(this).addClass("error");
+        var grand, parent;
+        parent = $(this).parent();
+        if (parent.hasClass("controls") === true) {
+          grand = parent.parent();
+          if (grand.hasClass("control-group") === true) {
+            grand.addClass("error");
+          }
+        }
         return console.log("GLOBAL ERROR:", msg, this);
       },
       ruleDelimiter: "|",
