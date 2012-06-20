@@ -69,25 +69,16 @@ $("#do_check").on('click', function()
 	$("#test").valitron('validate');
 })
 ```
-## Validate an live validation support such options
+## Validate and live validation support such options
 - rules: [] # rules to check, default "|" delimiter, ":" parameters, ex: max:5|min:2
-- language : 'en' # default language to use for errors, somehow should be loaded :)
-  passes jQuery element and message, function(message) {}, this refers to jquery object
-  global success will not be fired! return value witch evolutes to tru to fire it!
-- success : null 
-  passes jQuery element and message, function(messagae) {}, this refers to jquery object
-  global error will not be fired! return value witch evolutes to tru to fire it!
-- error : null
-  executes before validation, returned value will be used for testing!
-- beforeValidate : null
-  executes after validation
-- afterValidate : null
-  indicates that vield is valid and doesnt contain any errors
-- valid : false
-  Timeout for live validation
-- timeout : 500
-  Timer reference
-- timer: null
+- language : 'en' - default language to use for errors, somehow should be loaded :)
+- success : null - passes jQuery element and message, function(message) {}, this refers to jquery object
+- error : null - passes jQuery element and message, function(messagae) {}, this refers to jquery object
+- beforeValidate : null - executes before validation, returned value will be used for testing!
+- afterValidate : null - executes after validation
+- valid : false - indicates that vield is valid and doesnt contain any errors
+- timeout : 500 - Timeout for live validation
+- timer: null - Timer reference
 
 ## Whant to change default options or config?
 ```javascript
