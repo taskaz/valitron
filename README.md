@@ -70,7 +70,7 @@ $("#do_check").on('click', function()
 })
 ```
 ## Validate and live validation support such options
-- rules: [] # rules to check, default "|" delimiter, ":" parameters, ex: max:5|min:2
+- ##rules: [] ##- rules to check, default "|" delimiter, ":" parameters, ex: max:5|min:2
 - language : 'en' - default language to use for errors, somehow should be loaded :)
 - success : null - passes jQuery element and message, function(message) {}, this refers to jquery object
 - error : null - passes jQuery element and message, function(messagae) {}, this refers to jquery object
