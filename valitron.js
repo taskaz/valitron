@@ -2,8 +2,10 @@
 (function() {
 
   (function($, window, document) {
-    var Valitron, config, defaults, valitron_name;
+    var Valitron, config, defaults, groups, translations, valitron_name;
     valitron_name = 'valitron';
+    translations = {};
+    groups = [];
     defaults = {
       rules: [],
       language: 'en',
@@ -18,30 +20,39 @@
     config = {
       globalSuccess: function(msg) {
         var grand, parent;
-        parent = $(this).parent();
-        if (parent.hasClass("controls") === true) {
-          grand = parent.parent();
-          if (grand.hasClass("control-group") === true) {
-            grand.removeClass("error");
+        if ($.valitron("config", "bootstrap")) {
+          parent = $(this).parent();
+          if (parent.hasClass("controls") === true) {
+            grand = parent.parent();
+            if (grand.hasClass("control-group") === true) {
+              grand = removeClass("error");
+            }
           }
+        } else {
+          $(this).removeClass("error");
         }
         return console.log("GLOBAL SUCCESS:", msg, this);
       },
       globalError: function(msg) {
         var grand, parent;
-        parent = $(this).parent();
-        if (parent.hasClass("controls") === true) {
-          grand = parent.parent();
-          if (grand.hasClass("control-group") === true) {
-            grand.addClass("error");
+        if ($.valitron("config", "bootstrap")) {
+          parent = $(this).parent();
+          if (parent.hasClass("controls") === true) {
+            grand = parent.parent();
+            if (grand.hasClass("control-group") === true) {
+              grand = addClass("error");
+            }
           }
+        } else {
+          $(this).addClass("error");
         }
         return console.log("GLOBAL ERROR:", msg, this);
       },
       ruleDelimiter: "|",
       ruleMethodDelimiter: ":",
       ruleParamDelimiter: ",",
-      ruleDataElement: 'validation'
+      ruleDataElement: 'validation',
+      bootstrap: true
     };
     Valitron = function(element, options) {
       var _d_opts;
@@ -243,6 +254,8 @@
       isInvalid: function() {
         return !this.options.valid;
       },
+      translate: function(key) {},
+      register: function(name, closure) {},
       debug: function() {
         console.log(this.el);
         console.log(this.options);
@@ -492,16 +505,22 @@
     $.valitron = function(el, options) {
       if (typeof el === "string") {
         if (el === "config") {
-          if (options != null) {
+          if ((options != null) && typeof options === "object") {
             $.extend(true, config, options);
+            console.log("set config:", options);
             return this.$el;
+          } else if (typeof options === "string") {
+            console.log("get config:", options);
+            return config.bootstrap;
           } else {
             return config;
           }
         } else if (el === "options") {
-          if (options[0] != null) {
-            defaults = this._extendOptions(options[0]);
+          if ((options != null) && typeof options === "object") {
+            defaults = this._extendOptions(options);
             return this.$el;
+          } else if (typeof options === "string") {
+            return defaults.options;
           } else {
             return defaults;
           }
