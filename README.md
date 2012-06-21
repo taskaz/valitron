@@ -1,11 +1,9 @@
-Valitron 0.1 beta
+Valitron 0.1.0.1 beta
 ========
 
 jQuery validation plugin for [Laravel](http://www.laravel.com/), with Twitter bootstrap markup support.
 
 Valitron name credits goes to [daylerees](http://daylerees.com/) :)
-
-Version: might be 0.1 beta!
 
 ## What can it do?
 
@@ -20,6 +18,14 @@ Version: might be 0.1 beta!
 - Configure invalid field marking.
 - Declare error and success validation callbacks.
 - Change default options and default config.
+
+### All callbacks gets array of objects witch defines element, rule, parameters and message
+Each array object contains following parameters:
+- result - /true/false validation result
+- rule - a rule applied
+- parameters - parameters for rules
+- message - the message
+- translation - translation string
 
 # Some examples
 Text input with some rules declared for validation:
@@ -95,5 +101,19 @@ $.valitron('config', {
 	ruleMethodDelimiter : ":"	// Rule and its parameter delimiter
 	ruleParamDelimiter: ","		// Rule parameters delimiter
 	ruleDataElement: 'validation'// html data element name witch holds validation rules
+})
+```
+### Valitron support all jquery selectors
+All selected elements will get valitron instances, hooked callbacks will be applied on each.
+```html
+Login:<input class="test" type="text" data-validation="required|min:2|max:30"><br>
+Password:<input class="test" type="password" data-validation="required|min:15">
+<button id="do_check" type="button">Take me to heaven!</button>
+```
+```javascript
+$(".test").valitron("live", {
+	error: function(messeges) {
+		// both input fields will have error callbacks
+	}
 })
 ```
