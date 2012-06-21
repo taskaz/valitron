@@ -1,6 +1,20 @@
 ( ($, window, document ) ->
 
+	# plugin name
 	valitron_name = 'valitron';
+
+	# Validation error messages object, defines errors, and replacements
+	# example { 'en' : [ "accepted" : "Error message", 
+	#					 "between": { "numeric" : "Error on type number" , "string": "error on string type" }
+	#					 "custom" : [ /*user defined errors*/ ]
+	#					 "attributes" : [ /*user defined attribute replacements*/ ]
+	# ]	}
+	# 
+	translations = {}; 
+
+	# Feature
+	# Array of group validation objects, group validation fires error and success callbacks.
+	groups = [];
 
 	# this is passed to valiation option some parameters might be predefined :)
 	defaults =
@@ -26,23 +40,28 @@
 	config =
 		globalSuccess : (msg) -> # global success, this refers to jquery object
 			# Only this much is tied with twitter
-			parent = $(this).parent()
-			if parent.hasClass("controls") == true
-				grand = parent.parent()
-				if grand.hasClass("control-group")==true
-					grand.removeClass "error"
+			if $.valitron "config", "bootstrap"
+				parent = $(this).parent()
+				if parent.hasClass("controls") == true
+					grand = parent.parent()
+					if grand.hasClass("control-group")==true
+						grand = removeClass "error"
+			else $(this).removeClass "error"
 			console.log "GLOBAL SUCCESS:", msg, this
 		globalError : (msg) -> # global error, this refers to jquery object
-			parent = $(this).parent()
-			if parent.hasClass("controls") == true
-				grand = parent.parent()
-				if grand.hasClass("control-group")==true
-					grand.addClass "error"
+			if $.valitron "config", "bootstrap"
+				parent = $(this).parent()
+				if parent.hasClass("controls") == true
+					grand = parent.parent()
+					if grand.hasClass("control-group")==true
+						grand = addClass "error"
+			else $(this).addClass "error"
 			console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
 		ruleParamDelimiter: ","
 		ruleDataElement: 'validation'
+		bootstrap : true
 
 	# valitron constructor, apply default options
 	Valitron = ( element, options ) ->
@@ -236,6 +255,12 @@
 
 		isInvalid : ->
 			return !this.options.valid
+
+		translate : (key)->
+			return
+
+		register : ( name, closure ) ->
+			return
 
 		debug : ->
 			console.log this.el
@@ -444,31 +469,24 @@
 		return _t[0]
 	# for weirdos
 	$.valitron = (el, options)->
-
 		if typeof el == "string"
 			if el =="config"
-				if options?
+				if options? and typeof options == "object"
 					$.extend true, config, options
 					return this.$el
+					# check for single option retrieval
+				else if typeof options == "string"
+					return config.bootstrap
 				else return config
 			else if el == "options"
-				if options[0]?
-					defaults = this._extendOptions options[0]
+				if options? and typeof options == "object"
+					defaults = this._extendOptions options
 					return this.$el
+				else if typeof options == "string"
+					return defaults.options
 				else return defaults
 
 		$.fn[valitron_name].apply el, Array.prototype.slice.call arguments, 1
-
-		# if options? and typeof options != undefined
-		# 	if cfg == "config"
-		# 		return $.extend(true, config, options)
-		# 	if cfg == "rule_defaults"
-		# 		return $.extend(true, defaults, options)
-		# else
-		# 	if cfg == "config"
-		# 		return config
-		# 	if cfg == "rule_defaults"
-		# 		return defaults
 
 	return
 
