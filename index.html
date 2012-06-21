@@ -76,6 +76,12 @@
 
 </body>
 <script type="text/javascript">
+	$.valitron("config", { bootstrap: false }); // remove bootstrap usage :)
+	console.log($.valitron('config'));
 	$("#req_text").valitron("live");
+	$("#validate_all").on('click', function()
+	{
+		$("#req_text").valitron("validate");
+	});
 </script>
 </html>
