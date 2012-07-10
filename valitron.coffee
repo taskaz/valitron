@@ -53,7 +53,7 @@
 				if parent.hasClass("controls") == true
 					grand = parent.parent()
 					if grand.hasClass("control-group")==true
-						grand = removeClass "error"
+						grand.removeClass "error"
 			else $(this).removeClass "error"
 			console.log "GLOBAL SUCCESS:", msg, this
 		globalError : (msg) -> # global error, this refers to jquery object
@@ -62,7 +62,7 @@
 				if parent.hasClass("controls") == true
 					grand = parent.parent()
 					if grand.hasClass("control-group")==true
-						grand = addClass "error"
+						grand.addClass "error"
 			else $(this).addClass "error"
 			console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
@@ -251,6 +251,19 @@
 			msg = this._translate name, rule, null, value, parameters, msg.type, msg.message
 			return msg
 
+		_register : ( name, closure ) ->
+			if typeof closure == "function"
+				this.validations[name] = closure
+			else return this.validations[name]
+			return this
+
+		# Replacer registration
+		_replacer : ( name, closure ) ->
+			if typeof closure == "function"
+				this.replacers[name] = closure
+			else return this.replacers[name]
+			return this
+
 		# initialization logic
 		init : ->
 			# console.log "Init"
@@ -316,9 +329,6 @@
 			return !this.options.valid
 
 		translate : (key)->
-			return
-
-		register : ( name, closure ) ->
 			return
 
 		debug : ->
@@ -537,7 +547,7 @@
 		# console.log "R:", _t[0]
 		return _t[0]
 	# for weirdos
-	$.valitron = (el, options)->
+	$.valitron = (el, options, opt2)->
 		if typeof el == "string"
 			if el =="config"
 				if options? and typeof options == "object"
@@ -561,6 +571,13 @@
 				else if typeof options == "string"
 					return translations[options]
 				else return translations
+			# For new validation rule registration
+			else if el == "rule" && typeof options == "string" && typeof opt2 == "function"
+				this._register options opt2
+			# For replacers registration
+			else if el == "replacer" && typeof options == "string" && typeof opt2 == "function"
+				this._replacer options opt2
+
 		$.fn[valitron_name].apply el, Array.prototype.slice.call arguments, 1
 
 	return
