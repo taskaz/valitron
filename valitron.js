@@ -28,7 +28,7 @@
           if (parent.hasClass("controls") === true) {
             grand = parent.parent();
             if (grand.hasClass("control-group") === true) {
-              grand = removeClass("error");
+              grand.removeClass("error");
             }
           }
         } else {
@@ -43,7 +43,7 @@
           if (parent.hasClass("controls") === true) {
             grand = parent.parent();
             if (grand.hasClass("control-group") === true) {
-              grand = addClass("error");
+              grand.addClass("error");
             }
           }
         } else {
@@ -264,6 +264,22 @@
         msg = this._translate(name, rule, null, value, parameters, msg.type, msg.message);
         return msg;
       },
+      _register: function(name, closure) {
+        if (typeof closure === "function") {
+          this.validations[name] = closure;
+        } else {
+          return this.validations[name];
+        }
+        return this;
+      },
+      _replacer: function(name, closure) {
+        if (typeof closure === "function") {
+          this.replacers[name] = closure;
+        } else {
+          return this.replacers[name];
+        }
+        return this;
+      },
       init: function() {
         return "Test init";
       },
@@ -328,7 +344,6 @@
         return !this.options.valid;
       },
       translate: function(key) {},
-      register: function(name, closure) {},
       debug: function() {
         console.log(this.el);
         console.log(this.options);
@@ -586,7 +601,7 @@
       });
       return _t[0];
     };
-    $.valitron = function(el, options) {
+    $.valitron = function(el, options, opt2) {
       if (typeof el === "string") {
         if (el === "config") {
           if ((options != null) && typeof options === "object") {
@@ -615,6 +630,10 @@
           } else {
             return translations;
           }
+        } else if (el === "rule" && typeof options === "string" && typeof opt2 === "function") {
+          this._register(options(opt2));
+        } else if (el === "replacer" && typeof options === "string" && typeof opt2 === "function") {
+          this._replacer(options(opt2));
         }
       }
       return $.fn[valitron_name].apply(el, Array.prototype.slice.call(arguments, 1));
