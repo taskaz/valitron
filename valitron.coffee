@@ -1,3 +1,5 @@
+# All this plugin is inspired by Taylor Otwell laravel framework validation class :)
+
 ( ($, window, document ) ->
 
 	# plugin name
@@ -10,8 +12,10 @@
 	#					 "attributes" : [ /*user defined attribute replacements*/ ]
 	# ]	}
 	# 
-	translations = {}; 
+	translations = {};
 
+	# Custom rule validation transliations
+	cust_translations = {};
 	# Feature
 	# Array of group validation objects, group validation fires error and success callbacks.
 	groups = [];
@@ -36,6 +40,10 @@
 		timeout : 500
 		# Timer reference
 		timer: null
+		# Last validation error messages
+		errors : {}
+		# Custom error messages, error with same key name as validation rule or attribute_rule notation for specific rule on field
+		messages : {}
 
 	config =
 		globalSuccess : (msg) -> # global success, this refers to jquery object
@@ -111,28 +119,25 @@
 			return rule
 
 		# general message constructor function, all rules sohuld return such structure
-		_ruleMsg : (res, transl, msg) ->
+		_ruleMsg : (res, type, msg) ->
 			_r =
 				result : res
-				translation : transl
+				type : type
 				message : msg
-
-			# if transl?
-				# do translation and put it to message
 			return _r
 
 		# # hellper to return positive result from validation rule
-		_validMsg : (transl, msg) ->
-			return this._ruleMsg true, transl, msg
+		_validMsg : (type, msg) ->
+			return this._ruleMsg true, type, msg
 
 		# hellper to return error results from validation rule
-		_invalidMsg : (transl, msg) ->
-			return this._ruleMsg false, transl, msg
+		_invalidMsg : (type, msg) ->
+			return this._ruleMsg false, type, msg
 
-		_condMsg : (cond, true_transl, true_msg, false_transl, false_smg) ->
+		_condMsg : (cond, type, true_msg, false_smg) ->
 			if cond 
-				return this._validMsg true_transl, true_msg
-			else return this._invalidMsg false_transl, false_smg
+				return this._validMsg type, true_msg
+			else return this._invalidMsg type, false_smg
 
 		_extendRules : (rules) ->
 			_rls = this._parseRules(rules)
@@ -162,7 +167,7 @@
 
 		# After filter for checking rules, 
 		# result is array of checked rules:
-		#	{ result:true/false, rule:"rule", paramters:[parameters], message:"message", translation:"translation_string" }
+		#	{ result:true/false, rule:"rule", paramters:[parameters], message:"message", type:"validated input type" }
 		_callAfter : (result)->
 			if typeof this.options.afterValidate == "function"
 				this.options.afterValidate.call this.el, result
@@ -192,6 +197,60 @@
 					if _ret
 						config.globalError?.call(this.el, result)
 			return
+
+		_attribute : (attribute, lang)->
+			lang = if lang? then lang else this.options.language
+			if translations?[lang]?["attributes"]?[attribute]?
+				return translations[lang]["attributes"][attribute]
+			else return attribute
+
+		_replace : (message, attribute, rule, value, parameters) ->
+			# replace attribute name for nicer errors
+			message = message.replace(":attribute", this._attribute(attribute))
+			message = message.replace(":value", value)
+			# now call validation rules replacers, witch should perform even nicer error messages
+			if this.replacers[rule]?
+				message = this.replacers[rule](message, attribute, rule, parameters)
+			return message
+		# Check for rule translations in source
+		_translate_s : (source, name, type) ->
+			if source?[name]?
+				msg = source[name]
+				# Check if its type specific rule message
+				if typeof msg == "object"
+					return if type? && msg[type]? then msg[type] else null
+				else return msg
+			else return null
+			return null
+
+		# translate rule error
+		_translate : (attribute, rule, lang, value, parameters, type, def) ->
+			lang = if lang? then lang else this.options.language
+			# First should check for custom attribute messages, no language support tho
+			c_name = attribute+"_"+rule;
+			msg = this._translate_s this.options.messages, c_name, type
+			if msg? then return this._replace msg, attribute, rule, value, parameters
+			# Check for custom message in transliation files
+			if translations?[lang]?["custom"]?
+				_r1 = translations[lang]["custom"]
+				msg = this._translate_s _r1, c_name, type
+				if msg? then return this._replace msg, attribute, rule, value, parameters
+
+			# Next, check for custom rule message, no matter what attribute was validated
+			msg = this._translate_s this.options.messages, rule, type
+			if msg? then return this._replace msg, attribute, rule, value, parameters
+			# If there was no custom messages, retrun predefined ones
+			if translations?[lang]?
+				_r1 = translations[lang]
+				msg = this._translate_s _r1, rule, type
+				if msg? then return this._replace msg, attribute, rule, value, parameters
+			return def
+
+		_translate_msg: ( msg, rule, value, parameters) ->
+			name = if this.$el.attr("name")? && typeof this.$el.attr("name") != "undefined" then this.$el.attr("name") else this.$el.attr("id")
+			msg = this._translate name, rule, null, value, parameters, msg.type, msg.message
+			return msg
+
 		# initialization logic
 		init : ->
 			# console.log "Init"
@@ -207,9 +266,8 @@
 			this.validations[method]?.call this, el, parameters, value
 
 		validate : (options) ->
-			
 			this.options = this._extendOptions(options?[0])
-			# applie rules
+			# applied rules
 			self = this;
 			_result = []
 			_valid = true
@@ -217,18 +275,19 @@
 			$.each.call this, this.options.rules, (idx, value) ->
 				# Validate the rule
 				_re = self.validateRule.call self, self.$el, value[0], value[1], _r_bfr
+				msg = self._translate_msg _re, value[0], _r_bfr, value[1]
 				_result.push {
 						result:_re.result
 						rule: value[0]
 						parameters:value[1]
-						message: _re.message
-						translation: _re.translation
+						message: msg
 						}
 				if _re.result == false
 					_valid = false
 					# console.log value[0], value[1]
 					return
 			this.options.valid = _valid
+			this.options.errors = _result
 			this._callCallbacks _result, this.options
 			this._callAfter
 			return this.$el # for chainability
@@ -280,161 +339,171 @@
 				return this.$el
 			else return defaults
 
+		# Return errors from last check
+		errors : ->
+			return this.options.errors
+
 	Valitron.prototype.validations =
-			# validate max value
-			max : (el, parameters, value) ->
-				if typeof value == "number" and value > parameters[0]
-					return this._invalidMsg null, "Number is bigger then #{parameters}!"
-				else if typeof value == "string" and value.length > parameters[0]
-					this._invalidMsg null, "String is to long, should be max:#{parameters}!"
-				else
-					return this._validMsg  null, "Grats man"
+		# validate max value
+		max : (el, parameters, value) ->
+			if typeof value == "number" and value > parameters[0]
+				return this._invalidMsg "number", "Number is bigger then #{parameters}!"
+			else if typeof value == "string" and value.length > parameters[0]
+				this._invalidMsg "string", "String is to long, should be max:#{parameters}!"
+			else
+				return this._validMsg  null, "Grats man"
 
-			# validate min value
-			min: (el, parameters, value) ->
-				if typeof value == "number" and value < parameters[0]
-					return this._invalidMsg null, "Number is smaller then #{parameters}!"
-				else if typeof value == "string" and value.length < parameters[0]
-					this._invalidMsg null, "String should be at least #{parameters} characters length!"
-				else
-					return this._validMsg  null, "Grats man"
+		# validate min value
+		min: (el, parameters, value) ->
+			if typeof value == "number" and value < parameters[0]
+				return this._invalidMsg "number", "Number is smaller then #{parameters}!"
+			else if typeof value == "string" and value.length < parameters[0]
+				this._invalidMsg "string", "String should be at least #{parameters} characters length!"
+			else
+				return this._validMsg  null, "Grats man"
 
-			# element size is given length
-			size : (el, parameters, value) ->
-				if value.length == parameters[0]
-					return this._validMsg null, "Size is good."
-				else return this._invalidMsg null, "Attribute must be required size!"
+		# element size is given length
+		size : (el, parameters, value) ->
+			if value.length == parameters[0]
+				return this._validMsg null, "Size is good."
+			else return this._invalidMsg null, "Attribute must be required size!"
 
-			# element value is between given values
-			between : (el, parameters, value) ->
-				if parameters[0]? and parameters[1]?
-					if value < parameters[0] or value > parameters[1]
-						return this._invalidMsg null, "Value must be between "+parameters[0]+" and "+parameters[1];
-					else return this._validMsg null, "Value is between "+parameters[0]+" and "+parameters[1];
-				else return this._invalidMsg null, "Bad parameters provided"
+		# element value is between given values
+		between : (el, parameters, value) ->
+			if parameters[0]? and parameters[1]?
+				if value < parameters[0] or value > parameters[1]
+					return this._invalidMsg null, "Value must be between "+parameters[0]+" and "+parameters[1];
+				else return this._validMsg null, "Value is between "+parameters[0]+" and "+parameters[1];
+			else return this._invalidMsg null, "Bad parameters provided"
 
-			# element value is numeric, so its in or double
-			numeric : (el, parameters, value) ->
+		# element value is numeric, so its in or double
+		numeric : (el, parameters, value) ->
 
-			#element value is integer type
-			integer : (el, parameters, value) ->
-				patern = /^\-?\d+$/;
-				if patern.test value 
-					return this._validMsg null, "Its integer allright."
-				else return this._invalidMsg null, "Not integer man."
+		#element value is integer type
+		integer : (el, parameters, value) ->
+			patern = /^\-?\d+$/;
+			if patern.test value 
+				return this._validMsg null, "Its integer allright."
+			else return this._invalidMsg null, "Not integer man."
 
-			# value for element is required
-			required : (el, parameters, value) ->
-				if value == null or value == undefined
-					return this._invalidMsg null, "Value must be set to something!"
-				else if typeof value == "string" and (value.length <= 0 or value == "")
-					return this._invalidMsg null, "Value must be set to something!"
-				else if typeof value == "boolean" or typeof value == "number"
-					return if Boolean(value) then this._validMsg null, "Grats man" else this._invalidMsg null, "Value must be set to something!"
-				else return this._validMsg null, "Grats man"
+		# value for element is required
+		required : (el, parameters, value) ->
+			if value == null or value == undefined
+				return this._invalidMsg null, "Value must be set to something!"
+			else if typeof value == "string" and (value.length <= 0 or value == "")
+				return this._invalidMsg null, "Value must be set to something!"
+			else if typeof value == "boolean" or typeof value == "number"
+				return if Boolean(value) then this._validMsg null, "Grats man" else this._invalidMsg null, "Value must be set to something!"
+			else return this._validMsg null, "Grats man"
 
-			# validates that elements values is same
-			same : (el, parameters, value) ->
-				for param in parameters
-					if value != param
-						return this._invalidMsg null, "Values is not same"
-				return this._validMsg null, "Great, same values!"
-			# value must be evoluted to true
-			accepted : (el, parameters, value) ->
-				if Boolean value
-					return this._validMsg null, "Value is accepted"
-				else return this._invalidMsg null, "You must accepts this!"
+		# validates that elements values is same
+		same : (el, parameters, value) ->
+			for param in parameters
+				if value != param
+					return this._invalidMsg null, "Values is not same"
+			return this._validMsg null, "Great, same values!"
+		# value must be evoluted to true
+		accepted : (el, parameters, value) ->
+			if Boolean value
+				return this._validMsg null, "Value is accepted"
+			else return this._invalidMsg null, "You must accepts this!"
 
-			# elements values is different
-			different : (el, parameters, value) ->
+		# elements values is different
+		different : (el, parameters, value) ->
 
-			# validate that value is an array
-			in : (el, parameters, value) ->
-				if $.inArray(value, parameters[0].split(config.ruleParamDelimiter)) > -1
-					return this._validMsg null, "Value is in array."
-				else return this._invalidMsg null, "#{value} must be in "+parameters[0]+"!";
+		# validate that value is an array
+		in : (el, parameters, value) ->
+			if $.inArray(value, parameters[0].split(config.ruleParamDelimiter)) > -1
+				return this._validMsg null, "Value is in array."
+			else return this._invalidMsg null, "#{value} must be in "+parameters[0]+"!";
 
-			# value is not in array
-			not_id : (el, parameters, value) ->
-				if $.inArray(value, parameters[0].split(config.ruleParamDelimiter)) > -1
-					return this._invalidMsg null, "#{value} must NOT be in "+parameters[0]+"!";
-				else return this._validMsg null, "Value is not in array."
+		# value is not in array
+		not_id : (el, parameters, value) ->
+			if $.inArray(value, parameters[0].split(config.ruleParamDelimiter)) > -1
+				return this._invalidMsg null, "#{value} must NOT be in "+parameters[0]+"!";
+			else return this._validMsg null, "Value is not in array."
 
-			# validate against database, unique value
-			unique : (el, parameters, value) ->
-				console.log "Working on it..."
+		# validate against database, unique value
+		unique : (el, parameters, value) ->
+			console.log "Working on it..."
 
-			# exists, validate against database, check for value existance
-			exists : (el, parameters, value) ->
-				console.log "Working on it..."
+		# exists, validate against database, check for value existance
+		exists : (el, parameters, value) ->
+			console.log "Working on it..."
 
-			# validate ip address
-			ipv4 : (el, parameters, value) ->
-				pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g;
-				if typeof value == "string"
-					if pattern.test value
-						return this._validMsg null, "Good IPv4 address"
-					else return this._invalidMsg null, "Invalid address"
-				else return this._invalidMsg null, "Cant check this type of value"
+		# validate ip address
+		ipv4 : (el, parameters, value) ->
+			pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g;
+			if typeof value == "string"
+				if pattern.test value
+					return this._validMsg null, "Good IPv4 address"
+				else return this._invalidMsg null, "Invalid address"
+			else return this._invalidMsg null, "Cant check this type of value"
 
-			# validate email address
-			email : (el, parameters, value) ->
-				patern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
-				if patern.test value
-					return this._validMsg null, "E-mail is valid."
-				else return this._invalidMsg null, "Invalid e-mail, please fix it now!"
+		# validate email address
+		email : (el, parameters, value) ->
+			patern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?"
+			if patern.test value
+				return this._validMsg null, "E-mail is valid."
+			else return this._invalidMsg null, "Invalid e-mail, please fix it now!"
 
-			# validate url
-			url : (el, parameters, value) ->
-				console.log "Open for suggestions..."
+		# validate url
+		url : (el, parameters, value) ->
+			console.log "Open for suggestions..."
 
-			# validate that value is letter only
-			alpha : (el, parameters, value) ->
-				pattern = /^([a-z])+$/i
-				if typeof value == "string"
-					if pattern.test value
-						return this._validMsg null, "This is alpha only"
-					else return this._invalidMsg null, "Invalid value, can be only letters"
-				else return this._invalidMsg null, "Cant check this type of value"
+		# validate that value is letter only
+		alpha : (el, parameters, value) ->
+			pattern = /^([a-z])+$/i
+			if typeof value == "string"
+				if pattern.test value
+					return this._validMsg null, "This is alpha only"
+				else return this._invalidMsg null, "Invalid value, can be only letters"
+			else return this._invalidMsg null, "Cant check this type of value"
 
-			# validate letters and numbers only
-			alpha_num : (el, parameters, value) ->
-				pattern = /^([a-z0-9])+$/i
-				if typeof value == "string"
-					if pattern.test value
-						return this._validMsg null, "This is alpha only"
-					else return this._invalidMsg null, "Invalid value, can be only letters"
-				else return this._invalidMsg null, "Cant check this type of value"
+		# validate letters and numbers only
+		alpha_num : (el, parameters, value) ->
+			pattern = /^([a-z0-9])+$/i
+			if typeof value == "string"
+				if pattern.test value
+					return this._validMsg null, "This is alpha only"
+				else return this._invalidMsg null, "Invalid value, can be only letters"
+			else return this._invalidMsg null, "Cant check this type of value"
 
-			# validate letters numbers and dashes
-			alpha_dash : (el, parameters, value) ->
-				pattern = /^([-a-z0-9_-])+$/i
-				if typeof value == "string"
-					if pattern.test value
-						return this._validMsg null, "This is alpha only"
-					else return this._invalidMsg null, "Invalid value, can be only letters"
-				else return this._invalidMsg null, "Cant check this type of value"
+		# validate letters numbers and dashes
+		alpha_dash : (el, parameters, value) ->
+			pattern = /^([-a-z0-9_-])+$/i
+			if typeof value == "string"
+				if pattern.test value
+					return this._validMsg null, "This is alpha only"
+				else return this._invalidMsg null, "Invalid value, can be only letters"
+			else return this._invalidMsg null, "Cant check this type of value"
 
-			# validate regular expression match
-			match : (el, parameters, value) ->
-				pattern = parameters[0]
-				if typeof value == "string"
-					if pattern?.test value
-						return this._validMsg null, "This is alpha only"
-					else return this._invalidMsg null, "Invalid value, can be only letters"
-				else return this._invalidMsg null, "Cant check this type of value"
+		# validate regular expression match
+		match : (el, parameters, value) ->
+			pattern = parameters[0]
+			if typeof value == "string"
+				if pattern?.test value
+					return this._validMsg null, "This is alpha only"
+				else return this._invalidMsg null, "Invalid value, can be only letters"
+			else return this._invalidMsg null, "Cant check this type of value"
 
-			# validate before date
-			before : (el, parameters, value) ->
-				if Date value < Date parameters[0]
-					return this._validMsg null, "#{value} is before #{parameters[0]}"
-				else return this._invalidMsg null, "#{value} must be  before #{parameters[0]}"
+		# validate before date
+		before : (el, parameters, value) ->
+			if Date value < Date parameters[0]
+				return this._validMsg null, "#{value} is before #{parameters[0]}"
+			else return this._invalidMsg null, "#{value} must be  before #{parameters[0]}"
 
-			#validate after date
-			after : (el, parameters, value) ->
-				if Date value > Date parameters[0]
-					return this._validMsg null, "#{value} is after "+parameters[0]
-				else return this._invalidMsg null, "#{value} must be  after "+parameters[0]
+		#validate after date
+		after : (el, parameters, value) ->
+			if Date value > Date parameters[0]
+				return this._validMsg null, "#{value} is after "+parameters[0]
+			else return this._invalidMsg null, "#{value} must be  after "+parameters[0]
+
+	Valitron.prototype.replacers =
+		max : (message, attribute, rule, parameters) ->
+			return message.replace(":max", parameters[0])
+		min : (message, attribute, rule, parameters) ->
+			return message.replace(":min", parameters[0])
 
 	# valitron function
 	$.fn[valitron_name] = (method, opts)->
@@ -476,16 +545,22 @@
 					return this.$el
 					# check for single option retrieval
 				else if typeof options == "string"
-					return config.bootstrap
+					return config[options]
 				else return config
 			else if el == "options"
 				if options? and typeof options == "object"
 					defaults = this._extendOptions options
 					return this.$el
 				else if typeof options == "string"
-					return defaults.options
+					return defaults[options]
 				else return defaults
-
+			else if el == "translation"
+				if options? and typeof options == "object"
+					$.extend(true, translations, options)
+					return this.$el
+				else if typeof options == "string"
+					return translations[options]
+				else return translations
 		$.fn[valitron_name].apply el, Array.prototype.slice.call arguments, 1
 
 	return
