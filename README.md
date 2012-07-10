@@ -1,4 +1,4 @@
-Valitron 0.1.0.1 beta
+Valitron 0.2 beta
 ========
 
 jQuery validation plugin for [Laravel](http://www.laravel.com/), with Twitter bootstrap markup support.
@@ -25,7 +25,7 @@ Each array object contains following parameters:
 - rule - a rule applied
 - parameters - parameters for rules
 - message - the message
-- translation - translation string
+- type - type to use for translation
 
 # Some examples
 Text input with some rules declared for validation:
@@ -48,7 +48,6 @@ $("#test").valitron('live', {
 				msg.rule,		// A rule applied
 				msg.parameters,	// Rule parameters
 				msg.message,	// Validation rule message, either translated or default one
-				msg.translation // feature support
 			);
 		}
 		// this refers to input DOM element
@@ -85,6 +84,8 @@ $("#do_check").on('click', function()
 - valid : false - indicates that vield is valid and doesnt contain any errors
 - timeout : 500 - Timeout for live validation
 - timer: null - Timer reference
+- errors: {} - holds last validation errors
+- messeges : {} - custom error messages, attribute_rule notation for specific error for attribute, and only ruleName for rule error
 
 ## Whant to change default options or config?
 ```javascript
