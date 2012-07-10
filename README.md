@@ -5,6 +5,11 @@ jQuery validation plugin for [Laravel](http://www.laravel.com/), with Twitter bo
 
 Valitron name credits goes to [daylerees](http://daylerees.com/) :)
 
+## Some news
+- Support error translation!
+- Reworked object witch should be returned by validation rule.
+- Added for replacing certain parts of messages, such as :max for max rule and so.
+
 ## What can it do?
 
 - Obviously validate user input data using different rules.
@@ -84,8 +89,8 @@ $("#do_check").on('click', function()
 - valid : false - indicates that vield is valid and doesnt contain any errors
 - timeout : 500 - Timeout for live validation
 - timer: null - Timer reference
-- errors: {} - holds last validation errors
-- messeges : {} - custom error messages, attribute_rule notation for specific error for attribute, and only ruleName for rule error
+- errors: {} - holds last validation errors( 0.2 beta )
+- messeges : {} - custom error messages, attribute_rule notation for specific error for attribute, and only ruleName for rule error ( 0.2 beta )
 
 ## Whant to change default options or config?
 ```javascript
@@ -118,3 +123,4 @@ $(".test").valitron("live", {
 	}
 })
 ```
+## Replacers
