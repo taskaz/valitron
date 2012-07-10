@@ -2,9 +2,10 @@
 (function() {
 
   (function($, window, document) {
-    var Valitron, config, defaults, groups, translations, valitron_name;
+    var Valitron, config, cust_translations, defaults, groups, translations, valitron_name;
     valitron_name = 'valitron';
     translations = {};
+    cust_translations = {};
     groups = [];
     defaults = {
       rules: [],
@@ -15,7 +16,9 @@
       afterValidate: null,
       valid: false,
       timeout: 500,
-      timer: null
+      timer: null,
+      errors: {},
+      messages: {}
     };
     config = {
       globalSuccess: function(msg) {
@@ -102,26 +105,26 @@
         });
         return rule;
       },
-      _ruleMsg: function(res, transl, msg) {
+      _ruleMsg: function(res, type, msg) {
         var _r;
         _r = {
           result: res,
-          translation: transl,
+          type: type,
           message: msg
         };
         return _r;
       },
-      _validMsg: function(transl, msg) {
-        return this._ruleMsg(true, transl, msg);
+      _validMsg: function(type, msg) {
+        return this._ruleMsg(true, type, msg);
       },
-      _invalidMsg: function(transl, msg) {
-        return this._ruleMsg(false, transl, msg);
+      _invalidMsg: function(type, msg) {
+        return this._ruleMsg(false, type, msg);
       },
-      _condMsg: function(cond, true_transl, true_msg, false_transl, false_smg) {
+      _condMsg: function(cond, type, true_msg, false_smg) {
         if (cond) {
-          return this._validMsg(true_transl, true_msg);
+          return this._validMsg(type, true_msg);
         } else {
-          return this._invalidMsg(false_transl, false_smg);
+          return this._invalidMsg(type, false_smg);
         }
       },
       _extendRules: function(rules) {
@@ -192,6 +195,75 @@
           }
         }
       },
+      _attribute: function(attribute, lang) {
+        var _ref, _ref1;
+        lang = lang != null ? lang : this.options.language;
+        if ((translations != null ? (_ref = translations[lang]) != null ? (_ref1 = _ref["attributes"]) != null ? _ref1[attribute] : void 0 : void 0 : void 0) != null) {
+          return translations[lang]["attributes"][attribute];
+        } else {
+          return attribute;
+        }
+      },
+      _replace: function(message, attribute, rule, value, parameters) {
+        message = message.replace(":attribute", this._attribute(attribute));
+        message = message.replace(":value", value);
+        if (this.replacers[rule] != null) {
+          message = this.replacers[rule](message, attribute, rule, parameters);
+        }
+        return message;
+      },
+      _translate_s: function(source, name, type) {
+        var msg;
+        if ((source != null ? source[name] : void 0) != null) {
+          msg = source[name];
+          if (typeof msg === "object") {
+            if ((type != null) && (msg[type] != null)) {
+              return msg[type];
+            } else {
+              return null;
+            }
+          } else {
+            return msg;
+          }
+        } else {
+          return null;
+        }
+        return null;
+      },
+      _translate: function(attribute, rule, lang, value, parameters, type, def) {
+        var c_name, msg, _r1, _ref;
+        lang = lang != null ? lang : this.options.language;
+        c_name = attribute + "_" + rule;
+        msg = this._translate_s(this.options.messages, c_name, type);
+        if (msg != null) {
+          return this._replace(msg, attribute, rule, value, parameters);
+        }
+        if ((translations != null ? (_ref = translations[lang]) != null ? _ref["custom"] : void 0 : void 0) != null) {
+          _r1 = translations[lang]["custom"];
+          msg = this._translate_s(_r1, c_name, type);
+          if (msg != null) {
+            return this._replace(msg, attribute, rule, value, parameters);
+          }
+        }
+        msg = this._translate_s(this.options.messages, rule, type);
+        if (msg != null) {
+          return this._replace(msg, attribute, rule, value, parameters);
+        }
+        if ((translations != null ? translations[lang] : void 0) != null) {
+          _r1 = translations[lang];
+          msg = this._translate_s(_r1, rule, type);
+          if (msg != null) {
+            return this._replace(msg, attribute, rule, value, parameters);
+          }
+        }
+        return def;
+      },
+      _translate_msg: function(msg, rule, value, parameters) {
+        var name;
+        name = (this.$el.attr("name") != null) && typeof this.$el.attr("name") !== "undefined" ? this.$el.attr("name") : this.$el.attr("id");
+        msg = this._translate(name, rule, null, value, parameters, msg.type, msg.message);
+        return msg;
+      },
       init: function() {
         return "Test init";
       },
@@ -213,20 +285,21 @@
         _valid = true;
         _r_bfr = self._callBefore(self.options);
         $.each.call(this, this.options.rules, function(idx, value) {
-          var _re;
+          var msg, _re;
           _re = self.validateRule.call(self, self.$el, value[0], value[1], _r_bfr);
+          msg = self._translate_msg(_re, value[0], _r_bfr, value[1]);
           _result.push({
             result: _re.result,
             rule: value[0],
             parameters: value[1],
-            message: _re.message,
-            translation: _re.translation
+            message: msg
           });
           if (_re.result === false) {
             _valid = false;
           }
         });
         this.options.valid = _valid;
+        this.options.errors = _result;
         this._callCallbacks(_result, this.options);
         this._callAfter;
         return this.$el;
@@ -277,23 +350,26 @@
         } else {
           return defaults;
         }
+      },
+      errors: function() {
+        return this.options.errors;
       }
     };
     Valitron.prototype.validations = {
       max: function(el, parameters, value) {
         if (typeof value === "number" && value > parameters[0]) {
-          return this._invalidMsg(null, "Number is bigger then " + parameters + "!");
+          return this._invalidMsg("number", "Number is bigger then " + parameters + "!");
         } else if (typeof value === "string" && value.length > parameters[0]) {
-          return this._invalidMsg(null, "String is to long, should be max:" + parameters + "!");
+          return this._invalidMsg("string", "String is to long, should be max:" + parameters + "!");
         } else {
           return this._validMsg(null, "Grats man");
         }
       },
       min: function(el, parameters, value) {
         if (typeof value === "number" && value < parameters[0]) {
-          return this._invalidMsg(null, "Number is smaller then " + parameters + "!");
+          return this._invalidMsg("number", "Number is smaller then " + parameters + "!");
         } else if (typeof value === "string" && value.length < parameters[0]) {
-          return this._invalidMsg(null, "String should be at least " + parameters + " characters length!");
+          return this._invalidMsg("string", "String should be at least " + parameters + " characters length!");
         } else {
           return this._validMsg(null, "Grats man");
         }
@@ -471,6 +547,14 @@
         }
       }
     };
+    Valitron.prototype.replacers = {
+      max: function(message, attribute, rule, parameters) {
+        return message.replace(":max", parameters[0]);
+      },
+      min: function(message, attribute, rule, parameters) {
+        return message.replace(":min", parameters[0]);
+      }
+    };
     $.fn[valitron_name] = function(method, opts) {
       var args, options, rule_patt, _t;
       options = opts;
@@ -507,11 +591,9 @@
         if (el === "config") {
           if ((options != null) && typeof options === "object") {
             $.extend(true, config, options);
-            console.log("set config:", options);
             return this.$el;
           } else if (typeof options === "string") {
-            console.log("get config:", options);
-            return config.bootstrap;
+            return config[options];
           } else {
             return config;
           }
@@ -520,9 +602,18 @@
             defaults = this._extendOptions(options);
             return this.$el;
           } else if (typeof options === "string") {
-            return defaults.options;
+            return defaults[options];
           } else {
             return defaults;
+          }
+        } else if (el === "translation") {
+          if ((options != null) && typeof options === "object") {
+            $.extend(true, translations, options);
+            return this.$el;
+          } else if (typeof options === "string") {
+            return translations[options];
+          } else {
+            return translations;
           }
         }
       }
