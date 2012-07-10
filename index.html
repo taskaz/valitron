@@ -5,6 +5,7 @@
 	<link href="qunit.css" media="all" type="text/css" rel="stylesheet">
 	<script src="jquery-1.7.1.js"></script>
 	<script src="valitron.js"></script>
+	<script src="lang_en.js"></script>
 	<script src="qunit.js"></script>
 
 	<script src="./tests/accepted.test.js"></script>
@@ -59,7 +60,7 @@
 		<h3>Manual validation and expieriance field</h3>
 		<p><h4>Required validation</h4>
 			<input id="req_text" data-validation="required|min:10|max:30" type="text" placeholder="Required text input">
-			<input id="req_passwd" data-validation="required" type="password" placeholder="Required password input">
+			<input id="req_passwd" data-validation="required|between:10,12" type="password" placeholder="Required password input">
 			<br>
 			Required input <input data-validation="required" id="req_checkbox" type="checkbox">
 			<br>
@@ -77,7 +78,6 @@
 </body>
 <script type="text/javascript">
 	$.valitron("config", { bootstrap: false }); // remove bootstrap usage :)
-	console.log($.valitron('config'));
 	$("#req_text").valitron("live");
 	$("#validate_all").on('click', function()
 	{
