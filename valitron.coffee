@@ -42,6 +42,8 @@
 		timer: null
 		# Last validation error messages
 		errors : {}
+		# Last validation successfull messages
+		pass : {}
 		# Custom error messages, error with same key name as validation rule or attribute_rule notation for specific rule on field
 		messages : {}
 
@@ -49,22 +51,14 @@
 		globalSuccess : (msg) -> # global success, this refers to jquery object
 			# Only this much is tied with twitter
 			if $.valitron "config", "bootstrap"
-				parent = $(this).parent()
-				if parent.hasClass("controls") == true
-					grand = parent.parent()
-					if grand.hasClass("control-group")==true
-						grand.removeClass "error"
+				$(this).valitron "bootstrap", "unmark", "error"
 			else $(this).removeClass "error"
-			console.log "GLOBAL SUCCESS:", msg, this
+			# console.log "GLOBAL SUCCESS:", msg, this
 		globalError : (msg) -> # global error, this refers to jquery object
 			if $.valitron "config", "bootstrap"
-				parent = $(this).parent()
-				if parent.hasClass("controls") == true
-					grand = parent.parent()
-					if grand.hasClass("control-group")==true
-						grand.addClass "error"
+				$(this).valitron "bootstrap", "mark", "error"
 			else $(this).addClass "error"
-			console.log "GLOBAL ERROR:", msg, this
+			# console.log "GLOBAL ERROR:", msg, this
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
 		ruleParamDelimiter: ","
@@ -160,7 +154,7 @@
 		_callBefore :  ->
 			# check if there is before callback
 			if typeof this.options.beforeValidate == "function"
-				_r_bfr = this.options.beforeValidate.call this.el this.options
+				_r_bfr = this.options.beforeValidate.call this.el, this.options
 			if _r_bfr == null or _r_bfr ==undefined # check if before validation callback returns anything, if not parse value
 				_r_bfr = this._resolveValue(this.$el)	
 			return _r_bfr
@@ -173,29 +167,29 @@
 				this.options.afterValidate.call this.el, result
 			return
 
-		_callCallbacks : (result, options) ->
+		_callCallbacks : (error, pass, options) ->
 
-			if result != null and result != undefined # check if something is returned
+			if error != null and error != undefined and pass != null and pass != undefined # check if something is returned
 				# console.log $this.valitron.ruleReturns
 				# validation passed
 				if this.isValid() == true
 					# if if element validation has success callback execute it
 					if typeof this.options.success == "function"
 						# call element validation callback, if returns something call globalSuccess colback too
-						_ret = this.options.success?.call(this.el, result) 
+						_ret = this.options.success?.call(this.el, pass, error) 
 					# if not execute global callback
 					else 
-						config.globalSuccess?.call(this.el, result)
+						config.globalSuccess?.call(this.el, pass, error )
 					# if element success callback returns anything call globalSuccess too
 					if _ret
-						config.globalSuccess?.call(this.el, result)
+						config.globalSuccess?.call(this.el, pass, error)
 				# failed test, same checks as success case
 				else
 					if typeof this.options.error == "function"
-						_ret = this.options.error?.call(this.el, result)
-					else config.globalError?.call(this.el, result)
+						_ret = this.options.error?.call(this.el, error, pass)
+					else config.globalError?.call(this.el, error, pass)
 					if _ret
-						config.globalError?.call(this.el, result)
+						config.globalError?.call(this.el, error, pass)
 			return
 
 		_attribute : (attribute, lang)->
@@ -282,27 +276,36 @@
 			this.options = this._extendOptions(options?[0])
 			# applied rules
 			self = this;
-			_result = []
+			_errors = []
+			_pass = []
 			_valid = true
 			_r_bfr = self._callBefore self.options
 			$.each.call this, this.options.rules, (idx, value) ->
 				# Validate the rule
 				_re = self.validateRule.call self, self.$el, value[0], value[1], _r_bfr
 				msg = self._translate_msg _re, value[0], _r_bfr, value[1]
-				_result.push {
-						result:_re.result
-						rule: value[0]
-						parameters:value[1]
-						message: msg
-						}
+				if _re.result == true
+					_pass.push {
+							rule: value[0]
+							parameters:value[1]
+							message: msg
+							}
+				else
+					_errors.push {
+							rule: value[0]
+							parameters:value[1]
+							message: msg
+							}
+
 				if _re.result == false
 					_valid = false
 					# console.log value[0], value[1]
 					return
 			this.options.valid = _valid
-			this.options.errors = _result
-			this._callCallbacks _result, this.options
-			this._callAfter
+			this.options.errors = _errors
+			this.options.pass = _pass
+			this._callCallbacks _errors, _pass, this.options
+			this._callAfter _errors.concat _pass
 			return this.$el # for chainability
 
 		# method to hook live field validation
@@ -352,6 +355,24 @@
 		# Return errors from last check
 		errors : ->
 			return this.options.errors
+
+		# Bootstrap element marking
+		bootstrap : () ->
+			cmd = arguments[0][0]
+			marking = arguments[0][1]
+			if cmd == "mark"
+				parent = this.$el.parent()
+				if parent.hasClass("controls") == true
+					grand = parent.parent()
+					if grand.hasClass("control-group")==true
+						grand.addClass marking
+				
+			if cmd == "unmark"
+				parent = this.$el.parent()
+				if parent.hasClass("controls") == true
+					grand = parent.parent()
+					if grand.hasClass("control-group")==true
+						grand.removeClass marking
 
 	Valitron.prototype.validations =
 		# validate max value
@@ -521,7 +542,13 @@
 		options = opts
 		args = Array.prototype.slice.call arguments, 1
 		rule_patt = /^rule_/i
-		_t = $.map this, (el, idx) ->
+		# do validation on forms
+		if this.is "form"
+			# select all fields in form for validation
+			elms = this.find('[data-validation]')
+		else
+			elms = this
+		_t = $.map elms, (el, idx) ->
 			# check if its created on selected element
 			_val = $.data el, valitron_name
 			if !_val
