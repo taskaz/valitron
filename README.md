@@ -26,7 +26,6 @@ Valitron name credits goes to [daylerees](http://daylerees.com/) :)
 
 ### All callbacks gets array of objects witch defines element, rule, parameters and message
 Each array object contains following parameters:
-- result - /true/false validation result
 - rule - a rule applied
 - parameters - parameters for rules
 - message - the message
@@ -45,11 +44,10 @@ $("#test").valitron('live');
 Need to cache successfull of failed validation? Just pass some callbacks
 ```javascript
 $("#test").valitron('live', {
-	error : function(messages) {	// you get an array of validation messages, happens if at least one rule fails
+	error : function(errors, success) {	// you get an array of validation messages, errors and success
 		for ( var msg in messages )
 		{
 			console.log(
-				msg.result,		// True/false validation results
 				msg.rule,		// A rule applied
 				msg.parameters,	// Rule parameters
 				msg.message,	// Validation rule message, either translated or default one
@@ -58,7 +56,7 @@ $("#test").valitron('live', {
 		// this refers to input DOM element
 		$(this).addClass("error");
 	},
-	success : function(messages)
+	success : function(success, error)
 	{
 		$(this).removeClass("error");
 	},
