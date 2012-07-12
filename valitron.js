@@ -18,38 +18,23 @@
       timeout: 500,
       timer: null,
       errors: {},
+      pass: {},
       messages: {}
     };
     config = {
       globalSuccess: function(msg) {
-        var grand, parent;
         if ($.valitron("config", "bootstrap")) {
-          parent = $(this).parent();
-          if (parent.hasClass("controls") === true) {
-            grand = parent.parent();
-            if (grand.hasClass("control-group") === true) {
-              grand.removeClass("error");
-            }
-          }
+          return $(this).valitron("bootstrap", "unmark", "error");
         } else {
-          $(this).removeClass("error");
+          return $(this).removeClass("error");
         }
-        return console.log("GLOBAL SUCCESS:", msg, this);
       },
       globalError: function(msg) {
-        var grand, parent;
         if ($.valitron("config", "bootstrap")) {
-          parent = $(this).parent();
-          if (parent.hasClass("controls") === true) {
-            grand = parent.parent();
-            if (grand.hasClass("control-group") === true) {
-              grand.addClass("error");
-            }
-          }
+          return $(this).valitron("bootstrap", "mark", "error");
         } else {
-          $(this).addClass("error");
+          return $(this).addClass("error");
         }
-        return console.log("GLOBAL ERROR:", msg, this);
       },
       ruleDelimiter: "|",
       ruleMethodDelimiter: ":",
@@ -151,7 +136,7 @@
       _callBefore: function() {
         var _r_bfr;
         if (typeof this.options.beforeValidate === "function") {
-          _r_bfr = this.options.beforeValidate.call(this.el(this.options));
+          _r_bfr = this.options.beforeValidate.call(this.el, this.options);
         }
         if (_r_bfr === null || _r_bfr === void 0) {
           _r_bfr = this._resolveValue(this.$el);
@@ -163,33 +148,33 @@
           this.options.afterValidate.call(this.el, result);
         }
       },
-      _callCallbacks: function(result, options) {
+      _callCallbacks: function(error, pass, options) {
         var _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ret;
-        if (result !== null && result !== void 0) {
+        if (error !== null && error !== void 0 && pass !== null && pass !== void 0) {
           if (this.isValid() === true) {
             if (typeof this.options.success === "function") {
-              _ret = (_ref = this.options.success) != null ? _ref.call(this.el, result) : void 0;
+              _ret = (_ref = this.options.success) != null ? _ref.call(this.el, pass, error) : void 0;
             } else {
               if ((_ref1 = config.globalSuccess) != null) {
-                _ref1.call(this.el, result);
+                _ref1.call(this.el, pass, error);
               }
             }
             if (_ret) {
               if ((_ref2 = config.globalSuccess) != null) {
-                _ref2.call(this.el, result);
+                _ref2.call(this.el, pass, error);
               }
             }
           } else {
             if (typeof this.options.error === "function") {
-              _ret = (_ref3 = this.options.error) != null ? _ref3.call(this.el, result) : void 0;
+              _ret = (_ref3 = this.options.error) != null ? _ref3.call(this.el, error, pass) : void 0;
             } else {
               if ((_ref4 = config.globalError) != null) {
-                _ref4.call(this.el, result);
+                _ref4.call(this.el, error, pass);
               }
             }
             if (_ret) {
               if ((_ref5 = config.globalError) != null) {
-                _ref5.call(this.el, result);
+                _ref5.call(this.el, error, pass);
               }
             }
           }
@@ -294,30 +279,39 @@
         return (_ref = this.validations[method]) != null ? _ref.call(this, el, parameters, value) : void 0;
       },
       validate: function(options) {
-        var self, _r_bfr, _result, _valid;
+        var self, _errors, _pass, _r_bfr, _valid;
         this.options = this._extendOptions(options != null ? options[0] : void 0);
         self = this;
-        _result = [];
+        _errors = [];
+        _pass = [];
         _valid = true;
         _r_bfr = self._callBefore(self.options);
         $.each.call(this, this.options.rules, function(idx, value) {
           var msg, _re;
           _re = self.validateRule.call(self, self.$el, value[0], value[1], _r_bfr);
           msg = self._translate_msg(_re, value[0], _r_bfr, value[1]);
-          _result.push({
-            result: _re.result,
-            rule: value[0],
-            parameters: value[1],
-            message: msg
-          });
+          if (_re.result === true) {
+            _pass.push({
+              rule: value[0],
+              parameters: value[1],
+              message: msg
+            });
+          } else {
+            _errors.push({
+              rule: value[0],
+              parameters: value[1],
+              message: msg
+            });
+          }
           if (_re.result === false) {
             _valid = false;
           }
         });
         this.options.valid = _valid;
-        this.options.errors = _result;
-        this._callCallbacks(_result, this.options);
-        this._callAfter;
+        this.options.errors = _errors;
+        this.options.pass = _pass;
+        this._callCallbacks(_errors, _pass, this.options);
+        this._callAfter(_errors.concat(_pass));
         return this.$el;
       },
       live: function(options) {
@@ -368,6 +362,29 @@
       },
       errors: function() {
         return this.options.errors;
+      },
+      bootstrap: function() {
+        var cmd, grand, marking, parent;
+        cmd = arguments[0][0];
+        marking = arguments[0][1];
+        if (cmd === "mark") {
+          parent = this.$el.parent();
+          if (parent.hasClass("controls") === true) {
+            grand = parent.parent();
+            if (grand.hasClass("control-group") === true) {
+              grand.addClass(marking);
+            }
+          }
+        }
+        if (cmd === "unmark") {
+          parent = this.$el.parent();
+          if (parent.hasClass("controls") === true) {
+            grand = parent.parent();
+            if (grand.hasClass("control-group") === true) {
+              return grand.removeClass(marking);
+            }
+          }
+        }
       }
     };
     Valitron.prototype.validations = {
@@ -571,11 +588,16 @@
       }
     };
     $.fn[valitron_name] = function(method, opts) {
-      var args, options, rule_patt, _t;
+      var args, elms, options, rule_patt, _t;
       options = opts;
       args = Array.prototype.slice.call(arguments, 1);
       rule_patt = /^rule_/i;
-      _t = $.map(this, function(el, idx) {
+      if (this.is("form")) {
+        elms = this.find('[data-validation]');
+      } else {
+        elms = this;
+      }
+      _t = $.map(elms, function(el, idx) {
         var _ref, _ret, _val;
         _val = $.data(el, valitron_name);
         if (!_val) {
