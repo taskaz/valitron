@@ -62,7 +62,7 @@
 		ruleDelimiter : "|"
 		ruleMethodDelimiter : ":"
 		ruleParamDelimiter: ","
-		ruleDataElement: 'validation'
+		ruleDataElement: 'valitron'
 		bootstrap : true
 
 	# valitron constructor, apply default options
@@ -270,7 +270,9 @@
 				value = el[3]
 				el = el[0]
 			# console.log "VR:", el, method, parameters, value
-			this.validations[method]?.call this, el, parameters, value
+			if typeof this.validations[method] == "function"
+				this.validations[method]?.call this, el, parameters, value
+			else return this._validMsg null, "No such rule.."
 
 		validate : (options) ->
 			this.options = this._extendOptions(options?[0])
@@ -361,18 +363,10 @@
 			cmd = arguments[0][0]
 			marking = arguments[0][1]
 			if cmd == "mark"
-				parent = this.$el.parent()
-				if parent.hasClass("controls") == true
-					grand = parent.parent()
-					if grand.hasClass("control-group")==true
-						grand.addClass marking
+				this.$el.closest(".control-group").addClass marking
 				
 			if cmd == "unmark"
-				parent = this.$el.parent()
-				if parent.hasClass("controls") == true
-					grand = parent.parent()
-					if grand.hasClass("control-group")==true
-						grand.removeClass marking
+				this.$el.closest(".control-group").removeClass marking
 
 	Valitron.prototype.validations =
 		# validate max value
@@ -455,12 +449,12 @@
 			else return this._validMsg null, "Value is not in array."
 
 		# validate against database, unique value
-		unique : (el, parameters, value) ->
-			console.log "Working on it..."
+		# unique : (el, parameters, value) ->
+			# console.log "Working on it..."
 
 		# exists, validate against database, check for value existance
-		exists : (el, parameters, value) ->
-			console.log "Working on it..."
+		# exists : (el, parameters, value) ->
+			# console.log "Working on it..."
 
 		# validate ip address
 		ipv4 : (el, parameters, value) ->
@@ -479,8 +473,8 @@
 			else return this._invalidMsg null, "Invalid e-mail, please fix it now!"
 
 		# validate url
-		url : (el, parameters, value) ->
-			console.log "Open for suggestions..."
+		# url : (el, parameters, value) ->
+			# console.log "Open for suggestions..."
 
 		# validate that value is letter only
 		alpha : (el, parameters, value) ->
@@ -545,7 +539,7 @@
 		# do validation on forms
 		if this.is "form"
 			# select all fields in form for validation
-			elms = this.find('[data-validation]')
+			elms = this.find('[data-'+config.ruleDataElement+']')
 		else
 			elms = this
 		_t = $.map elms, (el, idx) ->
