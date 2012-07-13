@@ -348,7 +348,7 @@
 				return this.$el
 			else return config
 
-		options : (options) ->
+		option : (options) ->
 			if options[0]?
 				defaults = this._extendOptions options[0]
 				return this.$el
@@ -531,9 +531,10 @@
 			return message.replace(":min", parameters[0])
 
 	# valitron function
-	$.fn[valitron_name] = (method, opts)->
+	$.fn[valitron_name] = (pmethod, opts)->
 		# create plugin instances for each selected element
-		options = opts
+		opt = opts
+		method = pmethod
 		args = Array.prototype.slice.call arguments, 1
 		rule_patt = /^rule_/i
 		# do validation on forms
@@ -560,7 +561,8 @@
 				else
 					return $(el)
 			else if typeof method == 'object' # passing only options :)
-				_val.setOptions method
+				_val.option method
+				
 				return $(el)
 			else
 				$.error "Method #{method} does not exists on jQuery.valitron"
