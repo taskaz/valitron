@@ -39,7 +39,7 @@
       ruleDelimiter: "|",
       ruleMethodDelimiter: ":",
       ruleParamDelimiter: ",",
-      ruleDataElement: 'validation',
+      ruleDataElement: 'valitron',
       bootstrap: true
     };
     Valitron = function(element, options) {
@@ -276,7 +276,11 @@
           value = el[3];
           el = el[0];
         }
-        return (_ref = this.validations[method]) != null ? _ref.call(this, el, parameters, value) : void 0;
+        if (typeof this.validations[method] === "function") {
+          return (_ref = this.validations[method]) != null ? _ref.call(this, el, parameters, value) : void 0;
+        } else {
+          return this._validMsg(null, "No such rule..");
+        }
       },
       validate: function(options) {
         var self, _errors, _pass, _r_bfr, _valid;
@@ -364,26 +368,14 @@
         return this.options.errors;
       },
       bootstrap: function() {
-        var cmd, grand, marking, parent;
+        var cmd, marking;
         cmd = arguments[0][0];
         marking = arguments[0][1];
         if (cmd === "mark") {
-          parent = this.$el.parent();
-          if (parent.hasClass("controls") === true) {
-            grand = parent.parent();
-            if (grand.hasClass("control-group") === true) {
-              grand.addClass(marking);
-            }
-          }
+          this.$el.closest(".control-group").addClass(marking);
         }
         if (cmd === "unmark") {
-          parent = this.$el.parent();
-          if (parent.hasClass("controls") === true) {
-            grand = parent.parent();
-            if (grand.hasClass("control-group") === true) {
-              return grand.removeClass(marking);
-            }
-          }
+          return this.$el.closest(".control-group").removeClass(marking);
         }
       }
     };
@@ -481,12 +473,6 @@
           return this._validMsg(null, "Value is not in array.");
         }
       },
-      unique: function(el, parameters, value) {
-        return console.log("Working on it...");
-      },
-      exists: function(el, parameters, value) {
-        return console.log("Working on it...");
-      },
       ipv4: function(el, parameters, value) {
         var pattern;
         pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/g;
@@ -508,9 +494,6 @@
         } else {
           return this._invalidMsg(null, "Invalid e-mail, please fix it now!");
         }
-      },
-      url: function(el, parameters, value) {
-        return console.log("Open for suggestions...");
       },
       alpha: function(el, parameters, value) {
         var pattern;
@@ -593,7 +576,7 @@
       args = Array.prototype.slice.call(arguments, 1);
       rule_patt = /^rule_/i;
       if (this.is("form")) {
-        elms = this.find('[data-validation]');
+        elms = this.find('[data-' + config.ruleDataElement + ']');
       } else {
         elms = this;
       }
