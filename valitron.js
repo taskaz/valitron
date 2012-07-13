@@ -356,7 +356,7 @@
           return config;
         }
       },
-      options: function(options) {
+      option: function(options) {
         if (options[0] != null) {
           defaults = this._extendOptions(options[0]);
           return this.$el;
@@ -570,9 +570,10 @@
         return message.replace(":min", parameters[0]);
       }
     };
-    $.fn[valitron_name] = function(method, opts) {
-      var args, elms, options, rule_patt, _t;
-      options = opts;
+    $.fn[valitron_name] = function(pmethod, opts) {
+      var args, elms, method, opt, rule_patt, _t;
+      opt = opts;
+      method = pmethod;
       args = Array.prototype.slice.call(arguments, 1);
       rule_patt = /^rule_/i;
       if (this.is("form")) {
@@ -597,7 +598,7 @@
             return $(el);
           }
         } else if (typeof method === 'object') {
-          _val.setOptions(method);
+          _val.option(method);
           return $(el);
         } else {
           $.error("Method " + method + " does not exists on jQuery.valitron");
