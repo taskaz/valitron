@@ -140,7 +140,7 @@
 			return _rls
 
 		_extendOptions : (options) ->
-			if this.options == null or typeof this.options == undefined then return $.extend(true, this.options, defaults)
+			if this.options == null or typeof this.options == undefined then return $.extend(true, {}, this.options, defaults)
 			if options == null or typeof options == undefined then return this.options
 			# Extend current rules and save to temp var
 			_rls = this._extendRules(options?.rules?)
@@ -350,9 +350,9 @@
 
 		option : (options) ->
 			if options[0]?
-				defaults = this._extendOptions options[0]
+				this.options = this._extendOptions options[0]
 				return this.$el
-			else return defaults
+			else return this.options
 
 		# Return errors from last check
 		errors : ->
@@ -561,7 +561,7 @@
 				else
 					return $(el)
 			else if typeof method == 'object' # passing only options :)
-				_val.option method
+				_val.option [method]
 				
 				return $(el)
 			else
