@@ -358,10 +358,10 @@
       },
       option: function(options) {
         if (options[0] != null) {
-          defaults = this._extendOptions(options[0]);
+          this.options = this._extendOptions(options[0]);
           return this.$el;
         } else {
-          return defaults;
+          return this.options;
         }
       },
       errors: function() {
@@ -598,7 +598,7 @@
             return $(el);
           }
         } else if (typeof method === 'object') {
-          _val.option(method);
+          _val.option([method]);
           return $(el);
         } else {
           $.error("Method " + method + " does not exists on jQuery.valitron");
